@@ -4,12 +4,13 @@ import Link from "next/link";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 
-const breakingHeadlines = [
-  { title: "República Dominicana define su ruta para la próxima gran cita internacional", time: "18:42", href: "/noticias/reinas-del-caribe-oro-y-premios" },
-  { title: "El talento dominicano vuelve a marcar la jornada en las Grandes Ligas", time: "18:35", href: "/noticias/castillo-poncha-diez-white-sox" },
-  { title: "La agenda de hoy reúne béisbol, baloncesto, fútbol y voleibol", time: "18:21", href: "/marcadores" },
-  { title: "Pio TV estrena nuevos videos, entrevistas y análisis de la jornada", time: "18:08", href: "/videos" },
-];
+export type BreakingHeadline = {
+  title: string;
+  time: string;
+  href: string;
+};
+
+const breakingTickerInterval = 7000;
 
 const tuneInUrl = "https://tunein.com/radio/Pio-Deportes-1080-s182264/";
 const tuneInStreamUrl = "https://radio.streamingcpanel.com:7006/;";
@@ -29,11 +30,24 @@ type RadioContextValue = {
   dismissFlyover: () => void;
 };
 
+type BreakingTickerContextValue = {
+  index: number;
+  paused: boolean;
+  setPaused: (paused: boolean) => void;
+};
+
 const RadioContext = createContext<RadioContextValue | null>(null);
+const BreakingTickerContext = createContext<BreakingTickerContextValue | null>(null);
 
 function useRadio() {
   const context = useContext(RadioContext);
   if (!context) throw new Error("Radio controls must be rendered inside RadioProvider");
+  return context;
+}
+
+function useBreakingTicker() {
+  const context = useContext(BreakingTickerContext);
+  if (!context) throw new Error("BreakingTicker must be rendered inside BreakingTickerProvider");
   return context;
 }
 
@@ -215,21 +229,46 @@ export function RadioProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function BreakingTicker() {
+export function BreakingTickerProvider({ children }: { children: ReactNode }) {
   const [index, setIndex] = useState(0);
+  const [paused, setPaused] = useState(false);
 
   useEffect(() => {
+    if (paused) return;
+
     const interval = window.setInterval(
-      () => setIndex((current) => (current + 1) % breakingHeadlines.length),
-      10000,
+      () => setIndex((current) => current + 1),
+      breakingTickerInterval,
     );
     return () => window.clearInterval(interval);
-  }, []);
-
-  const headline = breakingHeadlines[index];
+  }, [paused]);
 
   return (
-    <div className="breaking-story-window" aria-live="polite" aria-atomic="true">
+    <BreakingTickerContext.Provider value={{ index, paused, setPaused }}>
+      {children}
+    </BreakingTickerContext.Provider>
+  );
+}
+
+export function BreakingTicker({ headlines }: { headlines: BreakingHeadline[] }) {
+  const { index, paused, setPaused } = useBreakingTicker();
+  const visibleHeadlines = headlines.slice(0, 20);
+
+  useEffect(() => () => setPaused(false), [setPaused]);
+
+  const headline = visibleHeadlines[index % Math.max(visibleHeadlines.length, 1)];
+  if (!headline) return null;
+
+  return (
+    <div
+      className={`breaking-story-window${paused ? " is-paused" : ""}`}
+      aria-live="polite"
+      aria-atomic="true"
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+      onFocus={() => setPaused(true)}
+      onBlur={() => setPaused(false)}
+    >
       <Link className="breaking-story" href={headline.href} key={headline.title}>
         <span className="breaking-copy">{headline.title}</span>
         <time className="breaking-time">{headline.time}</time>

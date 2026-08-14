@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable @next/next/no-img-element -- Los escudos llegan dinámicamente de cada proveedor deportivo. */
+
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
@@ -56,6 +58,24 @@ function formatUpdatedAt(value: string | null) {
   }).format(new Date(value));
 }
 
+function TeamMark({ logo, name, abbreviation, compact = false }: {
+  logo?: string;
+  name: string;
+  abbreviation: string;
+  compact?: boolean;
+}) {
+  const [failed, setFailed] = useState(false);
+  const fallback = abbreviation.replace(/[^\p{L}\p{N}]/gu, "").slice(0, 3).toUpperCase() || "PD";
+
+  return (
+    <span className={`team-mark${compact ? " is-compact" : ""}`} aria-hidden="true" title={name}>
+      {logo && !failed
+        ? <img src={logo} alt="" loading="lazy" decoding="async" onError={() => setFailed(true)} />
+        : <span>{fallback}</span>}
+    </span>
+  );
+}
+
 export function ScoreStrip() {
   const feed = useSportsFeed();
   const featuredGames = orderGamesByState(feed.games).slice(0, 4);
@@ -80,7 +100,17 @@ export function ScoreStrip() {
                 {game.state === "live" ? <i /> : null}{stateLabel(game)}
               </small>
             </div>
-            <div className="teams"><strong>{game.away}</strong><b>{game.score}</b><strong>{game.home}</strong></div>
+            <div className="teams">
+              <span className="score-team">
+                <TeamMark logo={game.awayLogo} name={game.awayFull} abbreviation={game.away} compact />
+                <strong>{game.away}</strong>
+              </span>
+              <b>{game.score}</b>
+              <span className="score-team is-home">
+                <TeamMark logo={game.homeLogo} name={game.homeFull} abbreviation={game.home} compact />
+                <strong>{game.home}</strong>
+              </span>
+            </div>
             <div className="score-hover-detail">{game.detail}<span>→</span></div>
           </Link>
         ))}
@@ -89,8 +119,29 @@ export function ScoreStrip() {
   );
 }
 
-const filters = ["Todos", "MLB", "NBA", "LIDOM", "Fútbol", "Voleibol", "Tenis"] as const;
+const filters = ["Todos", "MLB", "LIDOM", "NBA", "Baloncesto RD", "NFL", "Fútbol", "Hockey", "Voleibol", "Tenis"] as const;
 const days: ScheduleDay[] = ["Hoy", "Mañana", "Fin de semana"];
+
+function agendaDateLabels() {
+  const base = new Date();
+  const dateAt = (offset: number) => new Date(base.getTime() + offset * 86_400_000);
+  const shortDate = (date: Date) => new Intl.DateTimeFormat("es-DO", {
+    day: "2-digit",
+    month: "short",
+    timeZone: "America/Santo_Domingo",
+  }).format(date).replace(/[.-]/g, " ").replace(/\s+/g, " ").toUpperCase();
+  const weekend = Array.from({ length: 8 }, (_, index) => dateAt(index + 1)).filter((date) => {
+    const weekday = new Intl.DateTimeFormat("en-US", {
+      weekday: "short",
+      timeZone: "America/Santo_Domingo",
+    }).format(date);
+    return weekday === "Sat" || weekday === "Sun";
+  }).slice(0, 2);
+  const weekendLabel = weekend.length === 2
+    ? `${shortDate(weekend[0]).split(" ")[0]}–${shortDate(weekend[1])}`
+    : "PRÓXIMOS";
+  return [shortDate(dateAt(0)), shortDate(dateAt(1)), weekendLabel];
+}
 
 function ResultCards({ games }: { games: Game[] }) {
   return (
@@ -101,11 +152,44 @@ function ResultCards({ games }: { games: Game[] }) {
             <span>{game.sport}</span>
             <strong>{game.state === "live" ? <i /> : null}{stateLabel(game)}</strong>
           </div>
-          <div className="result-teams">
-            <div><b>{game.away}</b><span>{game.awayFull}</span></div>
-            <em>{game.score}</em>
-            <div><b>{game.home}</b><span>{game.homeFull}</span></div>
+          <div className="result-competition">
+            <strong>{game.competition || game.sport}</strong>
+            <span>{[
+              game.stage,
+              game.season ? `Temporada ${game.season}` : "",
+            ].filter(Boolean).join(" · ")}</span>
           </div>
+          <div className="result-teams">
+            <div className="result-team">
+              <div className="result-team-name">
+                <TeamMark logo={game.awayLogo} name={game.awayFull} abbreviation={game.away} />
+                <b>{game.away}</b>
+              </div>
+              <span>{game.awayFull}</span>
+            </div>
+            <em>{game.score}</em>
+            <div className="result-team is-home">
+              <div className="result-team-name">
+                <TeamMark logo={game.homeLogo} name={game.homeFull} abbreviation={game.home} />
+                <b>{game.home}</b>
+              </div>
+              <span>{game.homeFull}</span>
+            </div>
+          </div>
+          {game.incidents?.length ? (
+            <div className="result-events">
+              <div className="result-events-head"><strong>Eventos destacados</strong><small>{game.incidentNote}</small></div>
+              <ol>
+                {game.incidents.map((incident) => (
+                  <li className={`is-${incident.kind}`} key={incident.id}>
+                    <time>{incident.time}</time>
+                    <span>{incident.label}{incident.team ? <small>{incident.team}</small> : null}</span>
+                    {incident.score ? <b>{incident.score}</b> : null}
+                  </li>
+                ))}
+              </ol>
+            </div>
+          ) : game.incidentNote ? <p className="result-incident-note">{game.incidentNote}</p> : null}
           <div className="result-foot"><span>{game.detail}</span><span>{game.venue}</span></div>
         </article>
       ))}
@@ -123,6 +207,7 @@ export function ScoresHub() {
   const visibleSchedule = feed.schedule.filter((event) => event.day === day && (filter === "Todos" || event.sport === filter));
   const visibleSports = filters.slice(1).filter((sport) => visibleSchedule.some((event) => event.sport === sport));
   const updateTime = formatUpdatedAt(feed.updatedAt);
+  const dateLabels = agendaDateLabels();
 
   return (
     <div className="scores-hub">
@@ -130,7 +215,7 @@ export function ScoresHub() {
         <div className="score-date-switcher" role="group" aria-label="Seleccionar fecha de la agenda">
           {days.map((item, index) => (
             <button key={item} type="button" className={day === item ? "active" : ""} onClick={() => setDay(item)}>
-              <small>{index === 0 ? "13 AGO" : index === 1 ? "14 AGO" : "15–16 AGO"}</small>
+              <small>{dateLabels[index]}</small>
               <strong>{item}</strong>
             </button>
           ))}
@@ -177,7 +262,14 @@ export function ScoresHub() {
                 {visibleSchedule.filter((event) => event.sport === sport).map((event) => (
                   <article id={event.id} key={event.id}>
                     <div className="schedule-date"><strong>{event.time}</strong><small>{event.date}</small></div>
-                    <div className="schedule-match"><strong>{event.away} <i>vs.</i> {event.home}</strong><span>{event.competition}</span></div>
+                    <div className="schedule-match">
+                      <strong className="schedule-teams">
+                        <span><TeamMark logo={event.awayLogo} name={event.away} abbreviation={event.away} compact />{event.away}</span>
+                        <i>vs.</i>
+                        <span><TeamMark logo={event.homeLogo} name={event.home} abbreviation={event.home} compact />{event.home}</span>
+                      </strong>
+                      <span>{event.competition}</span>
+                    </div>
                     <div className="schedule-broadcast"><strong>{event.channel}</strong><small>{event.venue}</small></div>
                   </article>
                 ))}

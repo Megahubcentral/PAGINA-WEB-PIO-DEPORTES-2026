@@ -566,7 +566,7 @@ function mergeUniqueArticles(primary: Article[], editorial: Article[], limit: nu
 export async function getLatestArticles(limit = 12): Promise<Article[]> {
   try {
     const posts = await wpFetch(
-      `/posts?per_page=${limit}&_embed=wp:featuredmedia,wp:term,author`,
+      `/posts?per_page=${limit}&orderby=date&order=desc&_embed=wp:featuredmedia,wp:term,author`,
     );
     return posts?.length
       ? mergeUniqueArticles(posts.map(normalizePost), localArticleArchive, limit)

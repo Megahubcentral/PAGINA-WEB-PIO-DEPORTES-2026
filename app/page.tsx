@@ -4,7 +4,11 @@ import { AudioPlayer, AdSlot } from "./components/LiveWidgets";
 import { ArticleCard, SectionHeading, SiteFooter, SiteHeader } from "./components/Portal";
 import { ScoreStrip } from "./components/Scoreboard";
 import { VideoCarousel } from "./components/VideoCarousel";
+import { LotteryCompact } from "./components/LotteryCompact";
+import { InstagramFeed } from "./components/InstagramFeed";
 import { getCategoryArticles, getLatestArticles, getVideoItems, type Article } from "../lib/wordpress";
+import { getLotteryFeed } from "../lib/lottery-provider";
+import { getInstagramFeed } from "../lib/instagram-provider";
 
 export const revalidate = 120;
 
@@ -39,6 +43,8 @@ export default async function Home() {
     volleyballArticles,
     caribbeanArticles,
     otherArticles,
+    lotteryFeed,
+    instagramFeed,
   ] = await Promise.all([
     getLatestArticles(18),
     getVideoItems(6),
@@ -51,6 +57,8 @@ export default async function Home() {
     getCategoryArticles("voleibol"),
     getCategoryArticles("beisbol-del-caribe"),
     getCategoryArticles("otros-deportes"),
+    getLotteryFeed(),
+    getInstagramFeed(),
   ]);
 
   const usedArticles = new Set<string>();
@@ -136,6 +144,8 @@ export default async function Home() {
           </div>
         </section>
 
+        <InstagramFeed feed={instagramFeed} />
+
         <section className="coverage-section">
           <div className="shell">
             <SectionHeading kicker="Competiciones" title="Cobertura internacional" />
@@ -189,6 +199,8 @@ export default async function Home() {
             </div>
           </div>
         </section>
+
+        <LotteryCompact feed={lotteryFeed} />
 
         <div className="shell wide-ad bottom-ad"><AdSlot /></div>
       </main>
