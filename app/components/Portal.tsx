@@ -1,6 +1,6 @@
 /* eslint-disable @next/next/no-img-element -- WordPress media may come from an editor-configured CDN at runtime. */
 import Link from "next/link";
-import type { Article } from "../../lib/wordpress";
+import { getLatestArticles, type Article } from "../../lib/wordpress";
 import { PushNotificationButton } from "./Engagement";
 import { AdSlot, BreakingTicker, CurrentDate, LiveInfo, NewsletterForm } from "./LiveWidgets";
 
@@ -14,10 +14,17 @@ const primaryNav = [
   ["Fútbol", "/categoria/futbol"],
   ["NFL", "/categoria/nfl"],
   ["Tenis", "/categoria/tenis"],
+  ["Loterías", "/loterias"],
   ["Más deportes", "/categoria/otros-deportes"],
 ];
 
-export function SiteHeader() {
+export async function SiteHeader() {
+  const breakingHeadlines = (await getLatestArticles(20)).slice(0, 20).map((article) => ({
+    title: article.title,
+    time: article.publishedAt,
+    href: `/noticias/${article.slug}`,
+  }));
+
   return (
     <>
       <div className="utility-bar">
@@ -60,7 +67,7 @@ export function SiteHeader() {
       <div className="breaking-bar">
         <div className="shell breaking-inner">
           <strong>Última hora</strong>
-          <BreakingTicker />
+          <BreakingTicker headlines={breakingHeadlines} />
         </div>
       </div>
     </>
@@ -110,6 +117,7 @@ export function SiteFooter() {
           <Link href="/categoria/mlb">MLB</Link>
           <Link href="/categoria/nba">NBA</Link>
           <Link href="/categoria/futbol">Fútbol</Link>
+          <Link href="/loterias">Loterías</Link>
         </div>
         <div>
           <h3>Pío Deportes</h3>

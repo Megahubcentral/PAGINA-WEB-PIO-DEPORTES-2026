@@ -12,6 +12,23 @@ El portal funciona en modalidad headless: periodistas y editores crean entradas,
 
 Si la API no responde, la portada conserva contenido editorial de respaldo y nunca queda vacía.
 
+## Instagram de Pio Deportes
+
+La portada consulta las diez publicaciones más recientes de `@piodeportes` mediante la API oficial para cuentas profesionales. La ruta interna `/api/instagram` conserva el token fuera del navegador, ordena el contenido por fecha y usa una caché de diez minutos. El bloque vuelve a consultar esa ruta mientras el visitante permanece en la portada, por lo que las nuevas publicaciones aparecen sin modificar el sitio.
+
+1. Confirmar que `@piodeportes` sea una cuenta **Business** o **Creator**.
+2. Crear una aplicación Business en Meta y habilitar **Instagram API with Instagram Login**.
+3. Autorizar la cuenta propia con el permiso básico profesional y generar un token de larga duración.
+4. Configurar en Vercel, AWS y `.env.local`:
+
+```text
+INSTAGRAM_ACCESS_TOKEN=token-privado-de-meta
+INSTAGRAM_USER_ID=me
+INSTAGRAM_API_VERSION=v25.0
+```
+
+El token nunca debe utilizar el prefijo `NEXT_PUBLIC_`. Si todavía no se configura o Meta interrumpe temporalmente la consulta, la portada muestra una invitación limpia al perfil oficial en lugar de publicaciones inventadas. Conviene programar una revisión del token antes de su vencimiento y renovarlo desde Meta cuando corresponda.
+
 ## Vercel — opción recomendada
 
 Importar el repositorio, añadir las variables de `.env.example` y publicar. Vercel detecta Next.js y utiliza la configuración incluida. Apuntar `www.piodeportes.com` al proyecto cuando la versión haya sido aprobada.
@@ -22,18 +39,41 @@ El `Dockerfile` incluido produce una imagen de producción autocontenida. Puede 
 
 ## Marcadores deportivos en producción
 
-La interfaz consulta `/api/scores` cada 30 segundos. Esta ruta se ejecuta en el servidor de Next.js, conserva la clave fuera del navegador, ordena los encuentros como `live`, `finished` y `upcoming`, y utiliza una caché breve para proteger la cuota del proveedor. Funciona como una Vercel Function o dentro del contenedor de AWS sin cambiar el código.
+La interfaz consulta `/api/scores` cada 60 segundos. Esta ruta se ejecuta en el servidor de Next.js, conserva las claves fuera del navegador, ordena los encuentros como `live`, `finished` y `upcoming`, y utiliza caché compartida para proteger las cuotas gratuitas. Funciona como una Vercel Function o dentro del contenedor de AWS sin cambiar el código ni la interfaz visual.
 
-Configurar estas variables en producción y en los entornos previos a la publicación:
+La combinación gratuita incorporada es:
+
+- **MLB Stats API:** señal oficial sin API key para MLB y para la Liga de Béisbol Profesional de la República Dominicana (liga 131). Entrega competencia, temporada, estado, entrada, conteo, estadio y jugadas anotadoras durante partidos en vivo.
+- **NHL:** señal oficial sin API key para calendario, resultados, periodo, reloj, goles y asistencias de NHL. Durante la pausa de temporada es normal que el filtro no muestre encuentros.
+- **BALLDONTLIE:** partidos, marcadores y periodo de NBA y NFL. El endpoint de juegos forma parte del plan gratuito de cinco consultas por minuto; la jugada por jugada no está incluida en ese nivel.
+- **TheSportsDB:** calendarios, torneo, temporada, ronda y resultados recientes de Premier League, LaLiga y Champions League. La cronología v1 gratuita entrega hasta cinco eventos por partido; la interfaz los identifica como eventos destacados. El livescore v2 y una cronología más amplia requieren Premium.
+
+1. Crear una cuenta gratuita en `https://app.balldontlie.io/` y copiar la API key.
+2. Configurar en Vercel, AWS y `.env.local`:
+
+```text
+BALLDONTLIE_API_KEY=clave-gratuita-de-balldontlie
+THESPORTSDB_API_KEY=123
+```
+
+TheSportsDB no requiere registro para el nivel utilizado. Sin `BALLDONTLIE_API_KEY`, MLB, LIDOM, NHL y fútbol continúan funcionando; NBA y NFL no se consultan hasta que se configure esa clave.
+
+**Baloncesto dominicano:** API-Sports confirma cobertura de ligas de República Dominicana, incluida LNB. Su nivel gratuito permite 100 consultas diarias por disciplina: alcanza para un calendario o corte de resultados con caché amplia, pero no para actualizar un livescore cada minuto. Para cobertura continua su plan Pro de API-Basketball parte de US$15 al mes (7,500 consultas diarias). Por esa razón no se presenta información LNB incompleta como si fuera en vivo; puede conectarse mediante el adaptador normalizado cuando Pío Deportes elija el plan.
+
+**Alcance editorial recomendado:** la primera prioridad de orden es MLB, LIDOM, NBA, baloncesto dominicano, NFL, fútbol internacional y NHL. Dentro de cada disciplina, los partidos en vivo aparecen primero, después los terminados y por último los próximos.
+
+### Proveedor normalizado opcional
+
+Si Pío Deportes obtiene un feed de una liga, federación o proveedor adicional, se puede hacer que tenga prioridad mediante:
 
 ```text
 SPORTS_DATA_API_URL=https://feed-seguro.piodeportes.com/scores
 SPORTS_DATA_API_KEY=clave-del-proveedor
-SPORTS_DATA_API_HEADER=x-apisports-key
-SPORTS_DATA_PROVIDER_NAME=API-Sports
+SPORTS_DATA_API_HEADER=x-api-key
+SPORTS_DATA_PROVIDER_NAME=Proveedor oficial
 ```
 
-`SPORTS_DATA_API_URL` debe apuntar al adaptador contratado por Pio Deportes y devolver JSON normalizado con esta forma:
+`SPORTS_DATA_API_URL` debe devolver JSON normalizado con esta forma:
 
 ```json
 {
@@ -49,7 +89,19 @@ SPORTS_DATA_PROVIDER_NAME=API-Sports
       "status": "7ma entrada",
       "detail": "2 outs",
       "venue": "Fenway Park",
-      "state": "live"
+      "state": "live",
+      "competition": "MLB",
+      "stage": "Temporada regular",
+      "season": "2026",
+      "incidents": [
+        {
+          "id": "jugada-1",
+          "time": "Alta 7ª",
+          "kind": "score",
+          "label": "Jonrón de dos carreras",
+          "score": "4–2"
+        }
+      ]
     }
   ],
   "schedule": [],
@@ -58,7 +110,19 @@ SPORTS_DATA_PROVIDER_NAME=API-Sports
 }
 ```
 
-Los deportes aceptados actualmente son `MLB`, `NBA`, `LIDOM`, `Fútbol`, `Voleibol` y `Tenis`. Los estados aceptados son `live`, `finished` y `upcoming`. Si el proveedor no responde, la página conserva datos editoriales de respaldo para mantener disponible la sección.
+Los deportes aceptados actualmente son `MLB`, `LIDOM`, `NBA`, `Baloncesto RD`, `NFL`, `Fútbol`, `Hockey`, `Voleibol` y `Tenis`. Los estados aceptados son `live`, `finished` y `upcoming`. Si todos los proveedores fallan, la página conserva datos editoriales de respaldo para mantener disponible la sección.
+
+## Resultados de loterías
+
+La ruta `/loterias` y el resumen de portada comparten una sola caché del servidor. No se expone ninguna credencial en el navegador:
+
+- **Loto Real:** se intenta primero el feed publicado por Grupo Real. Si su certificado no puede validarse de forma segura desde Node, entra un respaldo informativo identificado; nunca se desactiva la validación TLS.
+- **Loteka:** resultados publicados directamente en el portal oficial de Loteka.
+- **LEIDSA:** su web oficial no ofrece actualmente una API o RSS público estable; se consulta un respaldo informativo con datos estructurados y cada resultado queda marcado como tal, con enlace para verificar en la fuente.
+
+La actualización se adapta al calendario dominicano. Durante los 50 minutos posteriores a los horarios principales de 12:55 p. m., 2:30 p. m., 7:55 p. m., 8:55 p. m. y 9:00 p. m. la caché dura cinco minutos. Fuera de esas ventanas dura treinta minutos. Los domingos se aplican los horarios especiales de LEIDSA y Lotería Nacional. Así se evita consultar continuamente datos que no cambian entre sorteos.
+
+La API interna `/api/lotteries` agrega `s-maxage` y `stale-while-revalidate`, por lo que Vercel o la capa CDN de AWS puede servir el mismo resultado a muchos visitantes sin repetir llamadas a las fuentes. Conviene revisar los horarios y condiciones de uso de cada operador trimestralmente.
 
 ## Publicidad y multimedia
 

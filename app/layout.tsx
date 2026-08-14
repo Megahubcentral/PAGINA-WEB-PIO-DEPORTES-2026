@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import { NewsletterPopup } from "./components/Engagement";
-import { RadioProvider } from "./components/LiveWidgets";
+import { BreakingTickerProvider, RadioProvider } from "./components/LiveWidgets";
 import "./globals.css";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.piodeportes.com";
@@ -46,8 +46,10 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="es" data-scroll-behavior="smooth">
       <body>
         <RadioProvider>
-          {children}
-          <NewsletterPopup />
+          <BreakingTickerProvider>
+            {children}
+            <NewsletterPopup />
+          </BreakingTickerProvider>
         </RadioProvider>
       </body>
       {adsenseClient ? (

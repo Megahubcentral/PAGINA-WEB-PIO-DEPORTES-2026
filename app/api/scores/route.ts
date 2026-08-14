@@ -6,10 +6,11 @@ import {
   type ScheduleEvent,
   type SportsFeed,
 } from "../../../lib/sports-data";
+import { freeSportsFeed } from "../../../lib/free-sports-provider";
 
 export const dynamic = "force-dynamic";
 
-const allowedSports = new Set(["MLB", "NBA", "LIDOM", "Fútbol", "Voleibol", "Tenis"]);
+const allowedSports = new Set(["MLB", "LIDOM", "NBA", "Baloncesto RD", "NFL", "Fútbol", "Hockey", "Voleibol", "Tenis"]);
 const allowedStates = new Set(["live", "finished", "upcoming"]);
 const allowedDays = new Set(["Hoy", "Mañana", "Fin de semana"]);
 
@@ -82,10 +83,10 @@ async function providerFeed(): Promise<SportsFeed | null> {
 }
 
 export async function GET() {
-  const feed = await providerFeed() || fallbackFeed();
+  const feed = await providerFeed() || await freeSportsFeed() || fallbackFeed();
   return NextResponse.json(feed, {
     headers: {
-      "Cache-Control": "public, s-maxage=20, stale-while-revalidate=40",
+      "Cache-Control": `public, s-maxage=${feed.refreshSeconds}, stale-while-revalidate=${feed.refreshSeconds * 2}`,
       "X-Pio-Scores-Source": feed.source,
     },
   });
