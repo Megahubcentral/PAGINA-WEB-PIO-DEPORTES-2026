@@ -35,7 +35,6 @@ export function InstagramFeed({ feed }: { feed: InstagramFeedData }) {
         .catch(() => undefined);
     };
 
-    refresh();
     const interval = window.setInterval(refresh, clientRefreshInterval);
     return () => {
       active = false;
@@ -65,7 +64,7 @@ export function InstagramFeed({ feed }: { feed: InstagramFeedData }) {
                 target="_blank"
                 rel="noreferrer"
                 key={post.id}
-                aria-label={`${postLabel(post)} de Pio Deportes en Instagram${post.caption ? `: ${post.caption.slice(0, 90)}` : ""}`}
+                aria-label={`${postLabel(post)} de Pio Deportes en Instagram`}
               >
                 <img src={post.imageUrl} alt="" loading="lazy" />
                 <span className="instagram-media-type">{post.mediaType === "VIDEO" || post.mediaProductType === "REELS" ? "▶" : post.mediaType === "CAROUSEL_ALBUM" ? "▣" : "↗"}</span>

@@ -96,13 +96,16 @@ test("free sports providers are server-side, cached and deployment ready", async
   assert.match(deployment, /100 consultas diarias/);
 });
 
-test("lottery results use scheduled server-side sources and include the required disclaimer", async () => {
-  const [provider, route, page, home, hub, brands, navigation, styles] = await Promise.all([
+test("lottery and horse-racing results use scheduled server-side sources and include the required disclaimer", async () => {
+  const [provider, horseProvider, route, horseRoute, page, home, hub, horseHub, brands, navigation, styles] = await Promise.all([
     readFile(new URL("lib/lottery-provider.ts", root), "utf8"),
+    readFile(new URL("lib/horse-racing-provider.ts", root), "utf8"),
     readFile(new URL("app/api/lotteries/route.ts", root), "utf8"),
+    readFile(new URL("app/api/horse-racing/route.ts", root), "utf8"),
     readFile(new URL("app/loterias/page.tsx", root), "utf8"),
     readFile(new URL("app/page.tsx", root), "utf8"),
     readFile(new URL("app/components/LotteryHub.tsx", root), "utf8"),
+    readFile(new URL("app/components/HorseRacingHub.tsx", root), "utf8"),
     readFile(new URL("lib/lottery-brand.ts", root), "utf8"),
     readFile(new URL("app/components/Portal.tsx", root), "utf8"),
     readFile(new URL("app/globals.css", root), "utf8"),
@@ -114,14 +117,23 @@ test("lottery results use scheduled server-side sources and include the required
   assert.match(provider, /refreshPlan/);
   assert.match(provider, /memoryCache/);
   assert.match(route, /s-maxage/);
+  assert.match(horseProvider, /hvc\.com\.do\/wp-json\/wp\/v2\/posts/);
+  assert.match(horseProvider, /hipodromo-camarero\.com\/api\/races/);
+  assert.match(horseProvider, /refreshPlan/);
+  assert.match(horseProvider, /memoryCache/);
+  assert.match(horseRoute, /s-maxage/);
   assert.match(page, /Pio Deportes publica estos resultados únicamente con fines informativos/);
+  assert.match(page, /HorseRacingHub/);
   assert.match(page, /Juega responsablemente/);
   assert.match(home, /LotteryCompact/);
   assert.match(hub, /lottery-brand-mark/);
+  assert.match(horseHub, /Resultados de carreras/);
+  assert.match(horseHub, /Comprobar jornada oficial/);
   assert.match(brands, /lotteryMonogram/);
   assert.match(navigation, /\["Loterías", "\/loterias"\]/);
   assert.match(styles, /\.lottery-results-grid/);
   assert.match(styles, /\.lottery-brand--leidsa/);
+  assert.match(styles, /\.horse-meetings-grid/);
 });
 
 test("the homepage Instagram feed is server-side, cached and automatically refreshed", async () => {

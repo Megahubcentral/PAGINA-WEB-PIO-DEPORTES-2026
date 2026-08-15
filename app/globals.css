@@ -99,9 +99,10 @@ button, input, select, textarea { font: inherit; }
 .teams b { font-size: 16px; font-weight: 900; color: #f4f4f5; white-space: nowrap; letter-spacing: -.02em; }
 .score-team { min-width: 0; display: flex; align-items: center; gap: 7px; }
 .score-team.is-home { justify-content: flex-end; text-align: right; }
-.team-mark { width: 36px; height: 36px; position: relative; display: inline-grid; flex: 0 0 auto; place-items: center; overflow: hidden; border: 1px solid #dedfe2; border-radius: 50%; background: white; box-shadow: 0 2px 7px rgba(16,17,20,.08); }
-.team-mark.is-compact { width: 21px; height: 21px; }
-.team-mark img { width: 82%; height: 82%; display: block; object-fit: contain; }
+.team-mark { width: 36px; height: 36px; max-width: 36px; max-height: 36px; position: relative; display: inline-grid; flex: 0 0 36px; place-items: center; overflow: hidden; border: 1px solid #dedfe2; border-radius: 50%; background: white; box-shadow: 0 2px 7px rgba(16,17,20,.08); }
+.team-mark.is-compact { width: 21px; height: 21px; max-width: 21px; max-height: 21px; flex-basis: 21px; }
+.team-mark img { width: 82%; height: 82%; max-width: 32px; max-height: 32px; display: block; object-fit: contain; }
+.team-mark.is-compact img { max-width: 18px; max-height: 18px; }
 .team-mark > span { color: var(--red); font-family: var(--display); font-size: 9px; font-weight: 950; letter-spacing: -.04em; }
 .team-mark.is-compact > span { font-size: 6px; }
 .score-hover-detail { position: absolute; left: 18px; right: 18px; bottom: 9px; display: flex; justify-content: space-between; color: #a9abb1; font-size: 8px; opacity: 0; transform: translateY(5px); transition: opacity .2s ease, transform .2s ease; }
@@ -837,6 +838,48 @@ button, input, select, textarea { font: inherit; }
 .lottery-source-list strong { font-size: 11px; }
 .lottery-source-list small { margin-top: 3px; color: var(--muted); font-size: 7px; text-transform: uppercase; }
 .lottery-source-list a > b { color: var(--red); }
+.horse-brand--hvc { --horse-accent: #d90000; --horse-soft: #fde8e8; --horse-deep: #8f0000; }
+.horse-brand--camarero { --horse-accent: #1b537f; --horse-soft: #e7f0f7; --horse-deep: #0d3658; }
+.horse-results-section { margin-top: 40px; padding: 31px; border: 1px solid var(--line); border-top: 5px solid var(--red); background: white; }
+.horse-results-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 25px; padding-bottom: 20px; border-bottom: 3px solid var(--ink); }
+.horse-results-head h2 { margin: 4px 0 0; font-family: var(--display); font-size: 38px; font-weight: 950; line-height: 1; letter-spacing: -.04em; text-transform: uppercase; }
+.horse-results-status { display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: 8px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+.horse-results-status i { width: 7px; height: 7px; border-radius: 50%; background: #1ba75b; box-shadow: 0 0 0 4px rgba(27,167,91,.13); }
+.horse-results-status time { color: var(--ink); font-variant-numeric: tabular-nums; }
+.horse-results-intro { max-width: 760px; margin: 18px 0 22px; color: var(--muted); font-size: 11px; line-height: 1.6; }
+.horse-meetings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.horse-meeting-card { min-width: 0; padding: 22px; border: 1px solid var(--line); border-top: 4px solid var(--horse-accent); background: #f8f8f6; }
+.horse-meeting-top { display: grid; grid-template-columns: 47px minmax(0,1fr) auto; gap: 12px; align-items: start; }
+.horse-track-mark { width: 47px; height: 47px; display: grid; place-items: center; border: 1px solid var(--horse-accent); background: var(--horse-soft); color: var(--horse-deep); font-family: var(--display); font-size: 11px; font-weight: 950; letter-spacing: -.03em; }
+.horse-meeting-top > div > span { color: var(--horse-deep); font-size: 7px; font-weight: 950; letter-spacing: .11em; text-transform: uppercase; }
+.horse-meeting-top h3 { margin: 4px 0 5px; font-family: var(--display); font-size: 20px; font-weight: 900; line-height: 1; }
+.horse-meeting-top time { color: var(--muted); font-size: 8px; text-transform: capitalize; }
+.horse-meeting-top > b { padding: 5px 7px; border: 1px solid #a8d9ba; background: #eefaf2; color: #14753b; font-size: 6px; font-weight: 900; letter-spacing: .07em; text-transform: uppercase; }
+.horse-meeting-label { margin: 16px 0 10px; color: var(--muted); font-size: 9px; font-weight: 800; }
+.horse-race-list { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid var(--line); }
+.horse-race-row { min-width: 0; display: grid; grid-template-columns: 31px minmax(0,1fr) auto; gap: 9px; align-items: center; min-height: 62px; padding: 10px 10px 10px 0; border-bottom: 1px solid var(--line); }
+.horse-race-row:nth-child(odd) { padding-right: 14px; border-right: 1px solid var(--line); }
+.horse-race-row:nth-child(even) { padding-left: 14px; }
+.horse-race-row > span { width: 31px; height: 31px; display: grid; place-items: center; border-radius: 50%; background: var(--horse-accent); color: white; font-family: var(--display); font-size: 14px; font-weight: 950; }
+.horse-race-row strong, .horse-race-row small { display: block; }
+.horse-race-row strong { overflow: hidden; font-size: 10px; line-height: 1.15; text-overflow: ellipsis; white-space: nowrap; }
+.horse-race-row div > small { margin-top: 4px; color: var(--muted); font-size: 7px; }
+.horse-race-row > b { color: var(--horse-deep); font-size: 9px; }
+.horse-source-link { display: flex; align-items: center; justify-content: space-between; margin-top: 18px; color: var(--muted); font-size: 8px; font-weight: 900; letter-spacing: .04em; text-transform: uppercase; }
+.horse-source-link span { color: var(--red); font-size: 13px; }
+.horse-source-link:hover { color: var(--ink); }
+.horse-results-empty { padding: 42px 25px; border: 1px dashed #c8c9cc; color: var(--muted); text-align: center; }
+.horse-results-empty strong { color: var(--ink); font-family: var(--display); font-size: 21px; }
+.horse-results-empty p { margin: 8px 0 0; font-size: 10px; }
+.horse-source-strip { display: grid; grid-template-columns: 1fr 1fr; margin-top: 18px; border: 1px solid var(--line); }
+.horse-source-strip a { display: grid; grid-template-columns: 9px 1fr auto; gap: 10px; align-items: center; min-height: 58px; padding: 11px 15px; }
+.horse-source-strip a + a { border-left: 1px solid var(--line); }
+.horse-source-strip a > i { width: 7px; height: 7px; border-radius: 50%; background: #aaa; }
+.horse-source-strip a > i.is-online { background: #1ba75b; box-shadow: 0 0 0 4px rgba(27,167,91,.12); }
+.horse-source-strip strong, .horse-source-strip small { display: block; }
+.horse-source-strip strong { font-size: 10px; }
+.horse-source-strip small { margin-top: 3px; color: var(--muted); font-size: 7px; text-transform: uppercase; }
+.horse-source-strip a > b { color: var(--red); }
 .lottery-disclaimer { margin-top: 40px; padding: 25px 29px; border-left: 5px solid var(--red); background: #e9e8e4; color: #5f6268; }
 .lottery-disclaimer strong { display: block; color: var(--ink); font-family: var(--display); font-size: 20px; text-transform: uppercase; }
 .lottery-disclaimer p { margin: 9px 0; font-size: 11px; line-height: 1.65; }
@@ -875,6 +918,8 @@ button, input, select, textarea { font: inherit; }
   .lottery-hero-balls span { width: 72px; height: 72px; font-size: 23px; }
   .lottery-results-grid { grid-template-columns: 1fr 1fr; }
   .lottery-sources { grid-template-columns: 240px 1fr; }
+  .horse-race-list { grid-template-columns: 1fr; }
+  .horse-race-row:nth-child(odd), .horse-race-row:nth-child(even) { padding: 10px 0; border-right: 0; }
 }
 
 @media (max-width: 760px) {
@@ -991,6 +1036,9 @@ button, input, select, textarea { font: inherit; }
   .lottery-schedule-grid article:nth-last-child(-n+2) { border-bottom: 0; }
   .lottery-sources { grid-template-columns: 1fr; gap: 20px; }
   .lottery-source-list a:nth-child(odd) { border-left: 0; }
+  .horse-results-section { padding: 23px; }
+  .horse-results-head { align-items: flex-start; flex-direction: column; }
+  .horse-meetings-grid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 480px) {
@@ -1083,6 +1131,12 @@ button, input, select, textarea { font: inherit; }
   .lottery-source-list { grid-template-columns: 1fr; }
   .lottery-source-list a, .lottery-source-list a:nth-last-child(-n+2) { border-left: 0; border-bottom: 1px solid var(--line); }
   .lottery-source-list a:last-child { border-bottom: 0; }
+  .horse-results-section { padding: 19px; }
+  .horse-meeting-top { grid-template-columns: 41px minmax(0,1fr); }
+  .horse-track-mark { width: 41px; height: 41px; }
+  .horse-meeting-top > b { grid-column: 2; justify-self: start; }
+  .horse-source-strip { grid-template-columns: 1fr; }
+  .horse-source-strip a + a { border-top: 1px solid var(--line); border-left: 0; }
   .lottery-disclaimer { padding: 22px 20px; }
 }
 

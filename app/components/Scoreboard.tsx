@@ -66,11 +66,12 @@ function TeamMark({ logo, name, abbreviation, compact = false }: {
 }) {
   const [failed, setFailed] = useState(false);
   const fallback = abbreviation.replace(/[^\p{L}\p{N}]/gu, "").slice(0, 3).toUpperCase() || "PD";
+  const imageSize = compact ? 18 : 32;
 
   return (
     <span className={`team-mark${compact ? " is-compact" : ""}`} aria-hidden="true" title={name}>
       {logo && !failed
-        ? <img src={logo} alt="" loading="lazy" decoding="async" onError={() => setFailed(true)} />
+        ? <img src={logo} alt="" width={imageSize} height={imageSize} loading="lazy" decoding="async" onError={() => setFailed(true)} />
         : <span>{fallback}</span>}
     </span>
   );

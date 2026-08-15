@@ -9,7 +9,7 @@ Portal deportivo editorial de Pío Deportes, construido con Next.js y preparado 
 - Secciones nacionales e internacionales: MLB, NBA, LIDOM, fútbol, NFL, tenis y otros deportes.
 - Clima y hora de Santo Domingo, agenda, marcadores, radio, videoteca Pio TV y buscador.
 - Marcadores ordenados por partidos en vivo, terminados y próximos, con torneo, fase, temporada y eventos destacados cuando la fuente los ofrece.
-- Resultados de loterías dominicanas con búsqueda por fecha, horarios, fuentes identificadas y un resumen compacto en portada.
+- Resultados de loterías dominicanas e hípica de República Dominicana y Puerto Rico, con búsqueda por fecha, fuentes oficiales identificadas y resúmenes compactos.
 - Ubicaciones para Google AdSense y publicidad de venta directa.
 - SEO técnico, metadatos sociales, sitemap y robots.
 - Configuración de Vercel y contenedor para AWS.
@@ -25,7 +25,7 @@ BALLDONTLIE_API_KEY=clave-gratuita-de-balldontlie
 THESPORTSDB_API_KEY=123
 ```
 
-La radio, los resultados deportivos y Google Ads se conectan mediante variables de entorno. Los marcadores usan las señales oficiales de MLB para MLB/LIDOM y de NHL para hockey, BALLDONTLIE para NBA/NFL y TheSportsDB para fútbol. Loterías consulta el canal oficial de Loteka e intenta el feed de Loto Real; cuando un canal oficial no puede consumirse de forma segura desde el servidor, usa un respaldo informativo claramente identificado. LEIDSA utiliza ese respaldo mientras su portal oficial no exponga un feed público. La caché del servidor protege los niveles gratuitos y evita llamadas repetidas.
+La radio, los resultados deportivos y Google Ads se conectan mediante variables de entorno. Los marcadores usan las señales oficiales de MLB para MLB/LIDOM y de NHL para hockey, BALLDONTLIE para NBA/NFL y TheSportsDB para fútbol. Loterías consulta el canal oficial de Loteka e intenta el feed de Loto Real; cuando un canal oficial no puede consumirse de forma segura desde el servidor, usa un respaldo informativo claramente identificado. LEIDSA utiliza ese respaldo mientras su portal oficial no exponga un feed público. La hípica consulta las publicaciones oficiales del Hipódromo V Centenario y los resultados oficiales del Hipódromo Camarero. La caché del servidor protege los niveles gratuitos y evita llamadas repetidas.
 
 ## Desarrollo
 

@@ -124,6 +124,17 @@ La actualización se adapta al calendario dominicano. Durante los 50 minutos pos
 
 La API interna `/api/lotteries` agrega `s-maxage` y `stale-while-revalidate`, por lo que Vercel o la capa CDN de AWS puede servir el mismo resultado a muchos visitantes sin repetir llamadas a las fuentes. Conviene revisar los horarios y condiciones de uso de cada operador trimestralmente.
 
+### Resultados hípicos
+
+La misma sección incorpora resultados de carreras de dos hipódromos oficiales, sin claves de API ni servicios de pago:
+
+- **Hipódromo V Centenario (República Dominicana):** consulta las publicaciones oficiales de resultados expuestas por WordPress y presenta los ganadores que la fuente identifica en cada jornada.
+- **Hipódromo Camarero (Puerto Rico):** consulta los resultados oficiales por fecha y el detalle de cada carrera. Cuando la fuente incluye ejemplar ganador y dividendo, se muestran; si no pueden normalizarse con seguridad, el portal enlaza el resultado oficial sin inventar información.
+
+La API interna `/api/horse-racing` conserva una caché de quince minutos durante las ventanas habituales de carreras y de seis horas fuera de ellas. También incluye `stale-while-revalidate`, de modo que Vercel o AWS puede atender muchas visitas sin repetir la consulta en los portales oficiales. El diseño siempre identifica el hipódromo y ofrece el enlace de verificación original.
+
+Estas fuentes son públicas pero no constituyen APIs documentadas con garantía contractual. Conviene revisar trimestralmente su estructura y sus condiciones de uso. El aviso legal de Loterías también cubre los resultados hípicos: Pío Deportes los transmite con fines informativos y cada jugada, dividendo o premio debe confirmarse en el canal oficial correspondiente.
+
 ## Publicidad y multimedia
 
 - Google Ads: completar el cliente y los IDs de slots en las variables públicas.
