@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { escapeHtml, runRedisCommand, sendMail } from "../../../lib/server-services";
+import { escapeHtml, runRedisCommand, sendMail, subscribeToBeehiiv } from "../../../lib/server-services";
 
 export const runtime = "nodejs";
 
@@ -23,8 +23,15 @@ export async function POST(request: Request) {
 
   let stored = false;
   try {
+    const beehiiv = await subscribeToBeehiiv(email, source);
+    stored = beehiiv.stored;
+  } catch (error) {
+    console.error("Newsletter Beehiiv write failed", error);
+  }
+
+  try {
     const redis = await runRedisCommand(["SADD", "pio:newsletter:subscribers", email]);
-    stored = redis.configured;
+    stored = stored || redis.configured;
   } catch (error) {
     console.error("Newsletter Redis write failed", error);
   }

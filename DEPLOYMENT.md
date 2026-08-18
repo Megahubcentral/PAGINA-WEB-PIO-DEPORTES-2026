@@ -161,9 +161,10 @@ El formulario de **Anúnciate** envía la solicitud desde `/api/advertising`; el
 2. Configurar `RESEND_API_KEY`, `CONTACT_FROM_EMAIL` y `ADVERTISING_INBOX` con los valores indicados en `.env.example`.
 3. Hacer una prueba real desde el dominio de producción y confirmar recepción, respuesta y carpeta de spam.
 
-La suscripción al boletín acepta dos integraciones complementarias:
+La suscripción al boletín se registra primero en Beehiiv y admite respaldos complementarios:
 
-- `NEWSLETTER_WEBHOOK_URL`, para conectar Mailchimp, Brevo, HubSpot u otra plataforma mediante webhook.
+- `BEEHIIV_API_KEY` y `BEEHIIV_PUBLICATION_ID`, en Settings → Workspace Settings → API. El ID empieza por `pub_`. Beehiiv puede exigir verificación de identidad (Stripe Identity) antes de mostrar esas claves.
+- `NEWSLETTER_WEBHOOK_URL`, para un destino adicional (Make, Zapier u otra plataforma).
 - Upstash Redis, que almacena el conjunto de correos cuando se configuran `UPSTASH_REDIS_REST_URL` y `UPSTASH_REDIS_REST_TOKEN`.
 
 La invitación emergente usa la misma base Redis para registrar un identificador HMAC de la IP sin guardar la dirección legible. La operación `SET ... NX` garantiza que se muestre una sola vez por IP incluso entre navegadores o dispositivos de la misma red. `NEWSLETTER_POPUP_SALT` debe ser una cadena privada, larga y aleatoria. Sin Redis, el portal conserva un respaldo por cookie que evita repeticiones en ese navegador, pero no puede garantizar el control entre dispositivos.

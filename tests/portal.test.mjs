@@ -63,6 +63,8 @@ test("commercial, privacy and audience engagement surfaces are wired", async () 
   assert.match(engagement, /newsletter-popup/);
   assert.match(engagement, /OneSignal/);
   assert.match(environment, /ADVERTISING_INBOX/);
+  assert.match(environment, /BEEHIIV_API_KEY/);
+  assert.match(environment, /BEEHIIV_PUBLICATION_ID/);
   assert.match(environment, /UPSTASH_REDIS_REST_URL/);
   assert.match(environment, /NEXT_PUBLIC_ONESIGNAL_APP_ID/);
   await access(new URL("public/OneSignalSDKWorker.js", root));
