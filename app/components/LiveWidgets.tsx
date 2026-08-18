@@ -402,7 +402,29 @@ export function NewsletterForm() {
   );
 }
 
-export function AdSlot({ size = "970 × 90", slot }: { size?: string; slot?: string }) {
+export type DirectAdAsset = {
+  src: string;
+  width: number;
+  height: number;
+};
+
+export type DirectAdCreative = {
+  href: string;
+  alt: string;
+  desktop: DirectAdAsset;
+  mobile?: DirectAdAsset;
+  wide?: DirectAdAsset;
+};
+
+export function AdSlot({
+  size = "970 × 90",
+  slot,
+  creative,
+}: {
+  size?: string;
+  slot?: string;
+  creative?: DirectAdCreative;
+}) {
   const client = process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_CLIENT;
   const configuredSlot =
     slot ??
@@ -411,14 +433,53 @@ export function AdSlot({ size = "970 × 90", slot }: { size?: string; slot?: str
       : process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_TOP_SLOT);
 
   useEffect(() => {
-    if (!client || !configuredSlot) return;
+    if (creative || !client || !configuredSlot) return;
     try {
       const ads = window as typeof window & { adsbygoogle?: unknown[] };
       (ads.adsbygoogle = ads.adsbygoogle || []).push({});
     } catch {
       // Ad blockers should never affect the rest of the portal.
     }
-  }, [client, configuredSlot]);
+  }, [client, configuredSlot, creative]);
+
+  if (creative) {
+    return (
+      <a
+        className="ad-slot ad-slot-direct"
+        href={creative.href}
+        target="_blank"
+        rel="noopener noreferrer sponsored"
+        aria-label={`Publicidad: ${creative.alt}`}
+      >
+        <picture>
+          {creative.mobile ? (
+            <source
+              media="(max-width: 760px)"
+              srcSet={creative.mobile.src}
+              width={creative.mobile.width}
+              height={creative.mobile.height}
+            />
+          ) : null}
+          {creative.wide ? (
+            <source
+              media="(min-width: 1100px)"
+              srcSet={creative.wide.src}
+              width={creative.wide.width}
+              height={creative.wide.height}
+            />
+          ) : null}
+          {/* Animated GIF creatives must not go through the image optimizer. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={creative.desktop.src}
+            alt={creative.alt}
+            width={creative.desktop.width}
+            height={creative.desktop.height}
+          />
+        </picture>
+      </a>
+    );
+  }
 
   if (client && configuredSlot) {
     return (

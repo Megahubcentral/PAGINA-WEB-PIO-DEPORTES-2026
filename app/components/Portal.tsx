@@ -2,7 +2,14 @@
 import Link from "next/link";
 import { getLatestArticles, type Article } from "../../lib/wordpress";
 import { PushNotificationButton } from "./Engagement";
-import { AdSlot, BreakingTicker, CurrentDate, LiveInfo, NewsletterForm } from "./LiveWidgets";
+import { AdSlot, BreakingTicker, CurrentDate, LiveInfo, NewsletterForm, type DirectAdCreative } from "./LiveWidgets";
+
+const aesDominicanaHeaderAd: DirectAdCreative = {
+  href: "https://www.aesdominicana.com/es",
+  alt: "AES Dominicana",
+  desktop: { src: "/ads/aes-dominicana/750x100-LIGHT.gif", width: 750, height: 100 },
+  mobile: { src: "/ads/aes-dominicana/300x50-LIGHT.gif", width: 300, height: 50 },
+};
 
 const primaryNav = [
   ["Portada", "/"],
@@ -45,7 +52,7 @@ export async function SiteHeader() {
           <Link className="brand" href="/" aria-label="Pío Deportes, portada">
             <img src="/pio-logo-original.png" alt="Pío Deportes" width="210" height="105" />
           </Link>
-          <div className="masthead-ad"><AdSlot size="728 × 90" /></div>
+          <div className="masthead-ad"><AdSlot size="750 × 100" creative={aesDominicanaHeaderAd} /></div>
           <form className="search" action="/buscar" role="search">
             <label className="sr-only" htmlFor="site-search">Buscar noticias</label>
             <input id="site-search" name="q" type="search" placeholder="Buscar" />
