@@ -12,6 +12,7 @@ const profiles: Record<string, { title: string; label: string; description: stri
   lidom: { title: "LIDOM", label: "Béisbol invernal", description: "Todo el seguimiento a los equipos, figuras y rivalidades de la pelota otoño-invernal dominicana.", code: "LIDOM" },
   futbol: { title: "Fútbol", label: "Juego internacional", description: "Ligas, selecciones y grandes torneos con contexto, resultados y análisis de sus protagonistas.", code: "FÚTBOL" },
   nfl: { title: "NFL", label: "Fútbol americano", description: "Noticias, resultados y claves de la temporada de fútbol americano profesional.", code: "NFL" },
+  tennis: { title: "Tenis", label: "Circuito mundial", description: "Grand Slams, rankings y protagonistas de los principales circuitos profesionales.", code: "TENIS" },
   tenis: { title: "Tenis", label: "Circuito mundial", description: "Grand Slams, rankings y protagonistas de los principales circuitos profesionales.", code: "TENIS" },
   voleibol: { title: "Voleibol", label: "Cancha y selección", description: "La actualidad de las selecciones dominicanas y de las principales competencias internacionales.", code: "VÓLEY" },
   "beisbol-del-caribe": { title: "Béisbol del Caribe", label: "Pelota caribeña", description: "Ligas, series y protagonistas del béisbol profesional de nuestra región.", code: "CARIBE" },

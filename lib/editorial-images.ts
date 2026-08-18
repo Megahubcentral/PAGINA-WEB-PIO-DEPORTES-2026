@@ -1216,7 +1216,7 @@ export const editorialImageBank: Record<string, EditorialImage[]> = {
       "license": "Public domain"
     }
   ],
-  "tenis": [
+  "tennis": [
     {
       "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d9/Tennis_shake_hands_after_match.jpg/1280px-Tennis_shake_hands_after_match.jpg",
       "credit": "kance",

@@ -532,6 +532,7 @@ button, input, select, textarea { font: inherit; }
 .category-hero--lidom { --section-bg: #eee7da; --section-accent: #c90000; --section-text: #111216; --section-muted: #555960; }
 .category-hero--futbol { --section-bg: #0b382c; --section-accent: #b9ef57; }
 .category-hero--nfl { --section-bg: #12233f; --section-accent: #5e9cff; }
+.category-hero--tennis,
 .category-hero--tenis { --section-bg: #a94124; --section-accent: #ffe08a; }
 .category-hero--voleibol { --section-bg: #063b47; --section-accent: #55d7ee; }
 .category-hero--beisbol-del-caribe { --section-bg: #3c1a12; --section-accent: #ffb247; }
@@ -550,6 +551,7 @@ button, input, select, textarea { font: inherit; }
 .category-front--lidom { --front-accent: #c90000; }
 .category-front--futbol { --front-accent: #147252; }
 .category-front--nfl { --front-accent: #3277d5; }
+.category-front--tennis,
 .category-front--tenis { --front-accent: #b44828; }
 .category-front--voleibol { --front-accent: #08788d; }
 .category-front--beisbol-del-caribe { --front-accent: #b76517; }

@@ -159,7 +159,7 @@ export const fallbackArticles: Article[] = [
     excerpt:
       "La campeona resolvió los momentos clave y aseguró su lugar en la definición del torneo.",
     category: "Tenis",
-    categorySlug: "tenis",
+    categorySlug: "tennis",
     image: "/news/tennis.jpg",
     author: "Pío Deportes",
     publishedAt: "Hace 2 horas",
@@ -284,7 +284,7 @@ const localCategoryProfiles: Record<string, { category: string; image: string; t
       "Cinco historias para seguir antes del inicio de la temporada",
     ],
   },
-  tenis: {
+  tennis: {
     category: "Tenis",
     image: "/news/tennis.jpg",
     titles: [
@@ -445,6 +445,26 @@ const localArticleArchive = [...fallbackArticles, ...localCategoryArticles];
 
 const apiBase = process.env.WORDPRESS_API_URL?.replace(/\/$/, "");
 
+export const wordpressCategorySlugs = [
+  "nacionales",
+  "mlb",
+  "nba",
+  "lidom",
+  "futbol",
+  "nfl",
+  "tennis",
+  "beisbol-del-caribe",
+  "otros-deportes",
+] as const;
+
+const categorySlugAliases: Record<string, string> = {
+  tenis: "tennis",
+};
+
+function resolveCategorySlug(slug: string) {
+  return categorySlugAliases[slug] ?? slug;
+}
+
 type WpTerm = { taxonomy?: string; name?: string; slug?: string };
 type WpPost = {
   id: number;
@@ -476,10 +496,20 @@ function plainText(value = "") {
     .trim();
 }
 
+const editorialCategorySlugs = new Set(["destacados", "uncategorized"]);
+
+function displayCategory(terms: WpTerm[]) {
+  const categories = terms.filter((term) => term.taxonomy === "category");
+  return (
+    categories.find((term) => term.slug && !editorialCategorySlugs.has(term.slug)) ??
+    categories[0]
+  );
+}
+
 function normalizePost(post: WpPost): Article {
   const media = post?._embedded?.["wp:featuredmedia"]?.[0];
   const terms = post?._embedded?.["wp:term"]?.flat?.() ?? [];
-  const category = terms.find((term: WpTerm) => term.taxonomy === "category");
+  const category = displayCategory(terms);
   const author = post?._embedded?.author?.[0]?.name;
 
   return {
@@ -576,6 +606,47 @@ export async function getLatestArticles(limit = 12): Promise<Article[]> {
   }
 }
 
+type WpTermRecord = { id: number };
+
+function mergePostsByDate(groups: WpPost[][], limit: number) {
+  const seen = new Set<number>();
+  return groups
+    .flat()
+    .filter((post) => {
+      if (!post?.id || seen.has(post.id)) return false;
+      seen.add(post.id);
+      return true;
+    })
+    .sort((left, right) => new Date(right.date).getTime() - new Date(left.date).getTime())
+    .slice(0, limit);
+}
+
+export async function getFeaturedArticles(limit = 7): Promise<Article[]> {
+  try {
+    const [tagTerms, categoryTerms] = await Promise.all([
+      wpFetch("/tags?slug=destacados,destacado") as Promise<WpTermRecord[] | null>,
+      wpFetch("/categories?slug=destacados") as Promise<WpTermRecord[] | null>,
+    ]);
+    const tagIds = (tagTerms ?? []).map((term) => term.id).join(",");
+    const categoryIds = (categoryTerms ?? []).map((term) => term.id).join(",");
+    const embed = "_embed=wp:featuredmedia,wp:term,author";
+    const [taggedPosts, categorizedPosts] = await Promise.all([
+      tagIds
+        ? wpFetch(`/posts?tags=${tagIds}&per_page=${limit}&orderby=date&order=desc&${embed}`) as Promise<WpPost[] | null>
+        : Promise.resolve(null),
+      categoryIds
+        ? wpFetch(`/posts?categories=${categoryIds}&per_page=${limit}&orderby=date&order=desc&${embed}`) as Promise<WpPost[] | null>
+        : Promise.resolve(null),
+    ]);
+    const featured = mergePostsByDate([taggedPosts ?? [], categorizedPosts ?? []], limit).map(normalizePost);
+    if (featured.length >= limit) return featured;
+    if (featured.length) return mergeUniqueArticles(featured, await getLatestArticles(limit), limit);
+  } catch {
+    // Fall through to the latest-news backup below.
+  }
+  return getLatestArticles(limit);
+}
+
 export async function getArticleBySlug(slug: string): Promise<Article | undefined> {
   try {
     const posts = await wpFetch(
@@ -589,13 +660,14 @@ export async function getArticleBySlug(slug: string): Promise<Article | undefine
 }
 
 export async function getCategoryArticles(slug: string): Promise<Article[]> {
+  const resolvedSlug = resolveCategorySlug(slug);
   const categoryEditorial = [
-    ...fallbackArticles.filter((article) => article.categorySlug === slug),
-    ...localCategoryArticles.filter((article) => article.categorySlug === slug),
+    ...fallbackArticles.filter((article) => article.categorySlug === resolvedSlug || article.categorySlug === slug),
+    ...localCategoryArticles.filter((article) => article.categorySlug === resolvedSlug || article.categorySlug === slug),
   ];
 
   try {
-    const categories = await wpFetch(`/categories?slug=${encodeURIComponent(slug)}`);
+    const categories = await wpFetch(`/categories?slug=${encodeURIComponent(resolvedSlug)}`);
     if (categories?.[0]) {
       const posts = await wpFetch(
         `/posts?categories=${categories[0].id}&per_page=${articlesPerCategory}&_embed=wp:featuredmedia,wp:term,author`,

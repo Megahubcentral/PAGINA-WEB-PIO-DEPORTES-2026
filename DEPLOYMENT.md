@@ -4,10 +4,10 @@
 
 El portal funciona en modalidad headless: periodistas y editores crean entradas, categorías, imágenes destacadas, galerías y contenido multimedia en WordPress; la portada las recibe por la API REST y se actualiza cada dos minutos.
 
-1. Instalar WordPress en `admin.piodeportes.com` o el dominio editorial elegido.
+1. Instalar WordPress en `piod.axworkflow.com` o el dominio editorial elegido.
 2. Conservar los tipos nativos `posts`, `categories`, `tags` y `media`.
-3. Definir `WORDPRESS_API_URL=https://admin.piodeportes.com/wp-json/wp/v2` en el proveedor de hosting.
-4. Usar estos slugs de categoría para mantener la navegación automática: `nacionales`, `mlb`, `nba`, `lidom`, `futbol`, `nfl`, `tenis`, `voleibol`, `beisbol-del-caribe` y `otros-deportes`.
+3. Definir `WORDPRESS_API_URL=https://piod.axworkflow.com/wp-json/wp/v2` en el proveedor de hosting.
+4. Usar estos slugs de categoría para mantener la navegación automática: `nacionales`, `mlb`, `nba`, `lidom`, `futbol`, `nfl`, `tennis`, `beisbol-del-caribe` y `otros-deportes`.
 5. Crear la categoría `videos` para alimentar automáticamente el archivo Pio Play. También se reconocen las entradas publicadas con formato de WordPress `video`.
 
 Si la API no responde, la portada conserva contenido editorial de respaldo y nunca queda vacía.

@@ -19,7 +19,7 @@ Portal deportivo editorial de Pío Deportes, construido con Next.js y preparado 
 Copiar `.env.example` a `.env.local` y completar, como mínimo:
 
 ```text
-WORDPRESS_API_URL=https://admin.piodeportes.com/wp-json/wp/v2
+WORDPRESS_API_URL=https://piod.axworkflow.com/wp-json/wp/v2
 NEXT_PUBLIC_SITE_URL=https://www.piodeportes.com
 BALLDONTLIE_API_KEY=clave-gratuita-de-balldontlie
 THESPORTSDB_API_KEY=123

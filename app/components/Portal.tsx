@@ -13,7 +13,8 @@ const primaryNav = [
   ["LIDOM", "/categoria/lidom"],
   ["Fútbol", "/categoria/futbol"],
   ["NFL", "/categoria/nfl"],
-  ["Tenis", "/categoria/tenis"],
+  ["Tenis", "/categoria/tennis"],
+  ["Caribe", "/categoria/beisbol-del-caribe"],
   ["Loterías", "/loterias"],
   ["Más deportes", "/categoria/otros-deportes"],
 ];
@@ -116,7 +117,12 @@ export function SiteFooter() {
           <Link href="/categoria/nacionales">Nacionales</Link>
           <Link href="/categoria/mlb">MLB</Link>
           <Link href="/categoria/nba">NBA</Link>
+          <Link href="/categoria/lidom">LIDOM</Link>
           <Link href="/categoria/futbol">Fútbol</Link>
+          <Link href="/categoria/nfl">NFL</Link>
+          <Link href="/categoria/tennis">Tenis</Link>
+          <Link href="/categoria/beisbol-del-caribe">Béisbol del Caribe</Link>
+          <Link href="/categoria/otros-deportes">Más deportes</Link>
           <Link href="/loterias">Loterías</Link>
         </div>
         <div>

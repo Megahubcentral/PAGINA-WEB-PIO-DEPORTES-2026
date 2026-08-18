@@ -6,7 +6,7 @@ import { ScoreStrip } from "./components/Scoreboard";
 import { VideoCarousel } from "./components/VideoCarousel";
 import { LotteryCompact } from "./components/LotteryCompact";
 import { InstagramFeed } from "./components/InstagramFeed";
-import { getCategoryArticles, getLatestArticles, getVideoItems, type Article } from "../lib/wordpress";
+import { getCategoryArticles, getFeaturedArticles, getVideoItems, type Article } from "../lib/wordpress";
 import { getLotteryFeed } from "../lib/lottery-provider";
 import { getInstagramFeed } from "../lib/instagram-provider";
 
@@ -32,7 +32,7 @@ function interleaveArticlePools(...pools: Article[][]) {
 
 export default async function Home() {
   const [
-    articles,
+    featuredArticles,
     videos,
     nationalArticles,
     mlbArticles,
@@ -40,21 +40,21 @@ export default async function Home() {
     footballArticles,
     nflArticles,
     tennisArticles,
-    volleyballArticles,
+    lidomArticles,
     caribbeanArticles,
     otherArticles,
     lotteryFeed,
     instagramFeed,
   ] = await Promise.all([
-    getLatestArticles(18),
+    getFeaturedArticles(7),
     getVideoItems(6),
     getCategoryArticles("nacionales"),
     getCategoryArticles("mlb"),
     getCategoryArticles("nba"),
     getCategoryArticles("futbol"),
     getCategoryArticles("nfl"),
-    getCategoryArticles("tenis"),
-    getCategoryArticles("voleibol"),
+    getCategoryArticles("tennis"),
+    getCategoryArticles("lidom"),
     getCategoryArticles("beisbol-del-caribe"),
     getCategoryArticles("otros-deportes"),
     getLotteryFeed(),
@@ -62,14 +62,14 @@ export default async function Home() {
   ]);
 
   const usedArticles = new Set<string>();
-  const topStories = takeUnique(articles, 7, usedArticles);
+  const topStories = takeUnique(featuredArticles, 7, usedArticles);
   const hero = topStories[0];
   const sideStories = topStories.slice(1, 3);
   const latest = topStories.slice(3, 7);
   const nationalStories = takeUnique(nationalArticles, 4, usedArticles);
   const coverageLead = takeUnique(mlbArticles, 1, usedArticles)[0];
   const coverageStories = takeUnique(
-    interleaveArticlePools(mlbArticles, tennisArticles, caribbeanArticles, volleyballArticles),
+    interleaveArticlePools(mlbArticles, tennisArticles, caribbeanArticles, lidomArticles),
     4,
     usedArticles,
   );
@@ -77,7 +77,7 @@ export default async function Home() {
   const nbaStories = takeUnique(nbaArticles, 4, usedArticles);
   const panoramaStory = takeUnique(footballArticles, 1, usedArticles)[0];
   const moreSportsStories = takeUnique(
-    interleaveArticlePools(otherArticles, tennisArticles, volleyballArticles, nflArticles, caribbeanArticles),
+    interleaveArticlePools(otherArticles, tennisArticles, nflArticles, caribbeanArticles, lidomArticles),
     4,
     usedArticles,
   );
