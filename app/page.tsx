@@ -90,6 +90,7 @@ export default async function Home() {
 
         <section className="shell lead-section">
           <div className="lead-label"><span /> Portada</div>
+          {hero ? (
           <div className="lead-grid">
             <article className="hero-story">
               <Link className="hero-media" href={`/noticias/${hero.slug}`}>
@@ -121,6 +122,7 @@ export default async function Home() {
               ))}
             </aside>
           </div>
+          ) : null}
         </section>
 
         <div className="shell wide-ad"><AdSlot /></div>
@@ -151,7 +153,7 @@ export default async function Home() {
             <SectionHeading kicker="Competiciones" title="Cobertura internacional" />
             <div className="subsection-title"><h3>Grandes Ligas</h3><Link href="/categoria/mlb">Más MLB →</Link></div>
             <div className="feature-pair coverage-feature">
-              <ArticleCard article={coverageLead} />
+              {coverageLead ? <ArticleCard article={coverageLead} /> : null}
               <div className="headline-stack">
                 {coverageStories.map((article) => (
                   <ArticleCard key={article.id} article={article} compact />
@@ -177,7 +179,7 @@ export default async function Home() {
           <div className="shell">
             <div className="subsection-title"><h3>NBA & baloncesto</h3><Link href="/categoria/nba">Más NBA →</Link></div>
             <div className="feature-pair reverse">
-              <ArticleCard article={nbaLead} />
+              {nbaLead ? <ArticleCard article={nbaLead} /> : null}
               <div className="headline-stack">
                 {nbaStories.map((article) => (
                   <ArticleCard key={article.id} article={article} compact />
@@ -190,7 +192,7 @@ export default async function Home() {
         <section className="shell closing-grid">
           <div>
             <SectionHeading kicker="Fútbol mundial" title="Panorama internacional" href="/categoria/futbol" />
-            <div className="closing-feature"><ArticleCard article={panoramaStory} /></div>
+            <div className="closing-feature">{panoramaStory ? <ArticleCard article={panoramaStory} /> : null}</div>
           </div>
           <div>
             <SectionHeading kicker="Polideportivo" title="Más disciplinas" href="/categoria/otros-deportes" />

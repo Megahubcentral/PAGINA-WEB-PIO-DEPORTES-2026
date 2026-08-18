@@ -63,6 +63,7 @@ export async function getInstagramFeed(): Promise<InstagramFeed> {
         Authorization: `Bearer ${accessToken}`,
       },
       next: { revalidate: refreshSeconds },
+      signal: AbortSignal.timeout(8000),
     });
     if (!response.ok) throw new Error(`Instagram respondió ${response.status}`);
 

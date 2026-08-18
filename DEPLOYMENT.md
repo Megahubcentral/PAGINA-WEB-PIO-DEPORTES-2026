@@ -31,7 +31,16 @@ El token nunca debe utilizar el prefijo `NEXT_PUBLIC_`. Si todavía no se config
 
 ## Vercel — opción recomendada
 
-Importar el repositorio, añadir las variables de `.env.example` y publicar. Vercel detecta Next.js y utiliza la configuración incluida. Apuntar `www.piodeportes.com` al proyecto cuando la versión haya sido aprobada.
+Importar el repositorio, añadir las variables de `.env.example` y publicar. Vercel detecta Next.js, instala con pnpm y usa Node 22. Apuntar `www.piodeportes.com` al proyecto cuando la versión haya sido aprobada.
+
+Variables mínimas para que el build y la portada salgan con noticias reales:
+
+```text
+WORDPRESS_API_URL=https://piod.axworkflow.com/wp-json/wp/v2
+NEXT_PUBLIC_SITE_URL=https://www.piodeportes.com
+```
+
+Si `WORDPRESS_API_URL` no está en el panel, el build usa esa misma API por defecto. El resto de claves (Instagram, Resend, Redis, AdSense, OneSignal, BALLDONTLIE) se pueden añadir después; el sitio publica igual con respaldos.
 
 ## AWS
 

@@ -443,7 +443,7 @@ export const localCategoryArticles: Article[] = Object.entries(localCategoryProf
 
 const localArticleArchive = [...fallbackArticles, ...localCategoryArticles];
 
-const apiBase = process.env.WORDPRESS_API_URL?.replace(/\/$/, "");
+const apiBase = (process.env.WORDPRESS_API_URL || "https://piod.axworkflow.com/wp-json/wp/v2").replace(/\/$/, "");
 
 export const wordpressCategorySlugs = [
   "nacionales",
@@ -580,6 +580,7 @@ async function wpFetch(path: string) {
   const response = await fetch(`${apiBase}${path}`, {
     next: { revalidate: 120 },
     headers: { Accept: "application/json" },
+    signal: AbortSignal.timeout(8000),
   });
   if (!response.ok) throw new Error(`WordPress respondió ${response.status}`);
   return response.json();

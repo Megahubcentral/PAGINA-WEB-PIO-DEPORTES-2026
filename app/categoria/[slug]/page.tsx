@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { AdSlot } from "../../components/LiveWidgets";
 import { SiteFooter, SiteHeader } from "../../components/Portal";
-import { getCategoryArticles } from "../../../lib/wordpress";
+import { getCategoryArticles, wordpressCategorySlugs } from "../../../lib/wordpress";
 
 const profiles: Record<string, { title: string; label: string; description: string; code: string }> = {
   nacionales: { title: "Nacionales", label: "República Dominicana", description: "Selecciones, atletas, federaciones y competencias que definen la actualidad deportiva dominicana.", code: "RD" },
@@ -21,6 +21,10 @@ const profiles: Record<string, { title: string; label: string; description: stri
 
 const defaultProfile = { title: "Actualidad", label: "Pío Deportes", description: "Noticias, análisis, protagonistas y resultados del deporte nacional e internacional.", code: "PIO" };
 
+export function generateStaticParams() {
+  return wordpressCategorySlugs.map((slug) => ({ slug }));
+}
+
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const profile = profiles[slug] ?? defaultProfile;
@@ -32,6 +36,24 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
   const profile = profiles[slug] ?? { ...defaultProfile, title: slug.replaceAll("-", " ") };
   const articles = await getCategoryArticles(slug);
   const lead = articles[0];
+  if (!lead) {
+    return (
+      <>
+        <SiteHeader />
+        <main>
+          <header className={`page-hero category-hero category-hero--${slug}`}>
+            <span className="category-watermark" aria-hidden="true">{profile.code}</span>
+            <div className="shell category-hero-inner">
+              <span className="eyebrow">{profile.label}</span>
+              <h1>{profile.title}</h1>
+              <p>{profile.description}</p>
+            </div>
+          </header>
+        </main>
+        <SiteFooter />
+      </>
+    );
+  }
   const secondary = articles.slice(1, 3);
   const mostRead = articles.slice(3, 6);
   const feed = articles.slice(6);
