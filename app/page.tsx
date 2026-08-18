@@ -99,7 +99,6 @@ export default async function Home() {
                 <div className="hero-copy">
                   <span className="hero-category">{hero.category}</span>
                   <h1>{hero.title}</h1>
-                  <p>{hero.excerpt}</p>
                   <div className="hero-meta"><span>{hero.author}</span><span>{hero.publishedAt}</span></div>
                 </div>
                 {hero.media ? <span className="hero-play">▶</span> : null}
@@ -189,6 +188,8 @@ export default async function Home() {
           </div>
         </section>
 
+        <LotteryCompact feed={lotteryFeed} />
+
         <section className="shell closing-grid">
           <div>
             <SectionHeading kicker="Fútbol mundial" title="Panorama internacional" href="/categoria/futbol" />
@@ -201,8 +202,6 @@ export default async function Home() {
             </div>
           </div>
         </section>
-
-        <LotteryCompact feed={lotteryFeed} />
 
         <div className="shell wide-ad bottom-ad"><AdSlot /></div>
       </main>
