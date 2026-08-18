@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
+import { Analytics } from "@vercel/analytics/next";
 import { NewsletterPopup } from "./components/Engagement";
 import { BreakingTickerProvider, RadioProvider } from "./components/LiveWidgets";
 import { getSiteUrl } from "../lib/site";
@@ -48,6 +49,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           <BreakingTickerProvider>
             {children}
             <NewsletterPopup />
+            <Analytics />
           </BreakingTickerProvider>
         </RadioProvider>
       </body>
