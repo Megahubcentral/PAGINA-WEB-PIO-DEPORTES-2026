@@ -4,6 +4,7 @@ import Link from "next/link";
 import { AdSlot } from "../../components/LiveWidgets";
 import { ArticleCard, SiteFooter, SiteHeader } from "../../components/Portal";
 import { fallbackArticles, getArticleBySlug } from "../../../lib/wordpress";
+import { getSiteUrl } from "../../../lib/site";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
@@ -19,7 +20,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
   const { slug } = await params;
   const article = await getArticleBySlug(slug);
   if (!article) return null;
-  const publicUrl = `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.piodeportes.com"}/noticias/${article.slug}`;
+  const publicUrl = `${getSiteUrl()}/noticias/${article.slug}`;
   const shareUrl = encodeURIComponent(publicUrl);
   const shareTitle = encodeURIComponent(article.title);
 

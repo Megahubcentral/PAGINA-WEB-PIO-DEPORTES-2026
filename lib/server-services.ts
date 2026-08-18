@@ -1,4 +1,5 @@
 import { createHmac } from "node:crypto";
+import { getSiteUrl } from "./site";
 
 type MailMessage = {
   to: string;
@@ -74,8 +75,7 @@ export async function runRedisCommand(command: Array<string | number>) {
 
 export function anonymizeIp(ip: string) {
   const secret =
-    process.env.NEWSLETTER_POPUP_SALT ??
-    process.env.NEXT_PUBLIC_SITE_URL ??
-    "pio-deportes-newsletter-popup";
+    process.env.NEWSLETTER_POPUP_SALT?.trim() ||
+    getSiteUrl();
   return createHmac("sha256", secret).update(ip).digest("hex");
 }

@@ -1,8 +1,9 @@
 import type { MetadataRoute } from "next";
+import { getSiteUrl } from "../lib/site";
 import { fallbackArticles, fallbackVideos, localCategoryArticles, wordpressCategorySlugs } from "../lib/wordpress";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const base = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.piodeportes.com";
+  const base = getSiteUrl();
   return [
     { url: base, changeFrequency: "hourly", priority: 1 },
     { url: `${base}/marcadores`, changeFrequency: "hourly", priority: .9 },

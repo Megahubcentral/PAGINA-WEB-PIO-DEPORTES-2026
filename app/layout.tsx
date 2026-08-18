@@ -2,12 +2,11 @@ import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import { NewsletterPopup } from "./components/Engagement";
 import { BreakingTickerProvider, RadioProvider } from "./components/LiveWidgets";
+import { getSiteUrl } from "../lib/site";
 import "./globals.css";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.piodeportes.com";
-
 export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
+  metadataBase: new URL(getSiteUrl()),
   title: {
     default: "Pío Deportes | El deporte vive aquí",
     template: "%s | Pío Deportes",
