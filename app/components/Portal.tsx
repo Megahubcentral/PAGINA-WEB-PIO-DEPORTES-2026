@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getLatestArticles, type Article } from "../../lib/wordpress";
 import { PushNotificationButton } from "./Engagement";
 import { AdSlot, BreakingTicker, CurrentDate, LiveInfo, NewsletterForm, type DirectAdCreative } from "./LiveWidgets";
+import { MainNav } from "./MainNav";
 
 const aesDominicanaHeaderAd: DirectAdCreative = {
   href: "https://www.aesdominicana.com/es",
@@ -10,21 +11,6 @@ const aesDominicanaHeaderAd: DirectAdCreative = {
   desktop: { src: "/ads/aes-dominicana/750x100-LIGHT.gif", width: 750, height: 100 },
   mobile: { src: "/ads/aes-dominicana/300x50-LIGHT.gif", width: 300, height: 50 },
 };
-
-const primaryNav = [
-  ["Portada", "/"],
-  ["Marcadores", "/marcadores"],
-  ["Nacionales", "/categoria/nacionales"],
-  ["MLB", "/categoria/mlb"],
-  ["NBA", "/categoria/nba"],
-  ["LIDOM", "/categoria/lidom"],
-  ["Fútbol", "/categoria/futbol"],
-  ["NFL", "/categoria/nfl"],
-  ["Tenis", "/categoria/tennis"],
-  ["Caribe", "/categoria/beisbol-del-caribe"],
-  ["Loterías", "/loterias"],
-  ["Más deportes", "/categoria/otros-deportes"],
-];
 
 export async function SiteHeader() {
   const breakingHeadlines = (await getLatestArticles(20)).slice(0, 20).map((article) => ({
@@ -60,16 +46,7 @@ export async function SiteHeader() {
           </form>
         </div>
 
-        <nav className="main-nav" aria-label="Secciones principales">
-          <div className="shell nav-bar">
-            <div className="nav-scroll">
-              {primaryNav.map(([label, href]) => (
-                <Link key={label} href={href}>{label}</Link>
-              ))}
-            </div>
-            <Link className="nav-live" href="/#radio"><span /> EN VIVO</Link>
-          </div>
-        </nav>
+        <MainNav />
       </header>
 
       <div className="breaking-bar">
@@ -122,6 +99,7 @@ export function SiteFooter() {
         <div>
           <h3>Secciones</h3>
           <Link href="/categoria/nacionales">Nacionales</Link>
+          <Link href="/categoria/internacional">Internacional</Link>
           <Link href="/categoria/mlb">MLB</Link>
           <Link href="/categoria/nba">NBA</Link>
           <Link href="/categoria/lidom">LIDOM</Link>

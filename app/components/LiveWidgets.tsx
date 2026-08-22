@@ -15,6 +15,28 @@ const breakingTickerInterval = 7000;
 const tuneInUrl = "https://tunein.com/radio/Pio-Deportes-1080-s182264/";
 const tuneInStreamUrl = "https://radio.streamingcpanel.com:7006/;";
 const waveBars = Array.from({ length: 22 }, (_, index) => index);
+
+function toPlaybackStreamUrl(url: string) {
+  // Shoutcast's trailing "/;" is a Winamp-era hack that Safari fails to fetch.
+  return url.endsWith("/;") ? `${url.slice(0, -2)}/stream` : url;
+}
+
+function getAudioContextConstructor() {
+  if (typeof window === "undefined") return undefined;
+  return window.AudioContext ??
+    (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+}
+
+function usesWebKitMediaPlayback() {
+  if (typeof navigator === "undefined") return false;
+  const userAgent = navigator.userAgent;
+  const iOS = /iP(ad|hone|od)/.test(userAgent)
+    || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const desktopSafari = /Safari/i.test(userAgent)
+    && !/Chrome|Chromium|CriOS|FxiOS|EdgiOS|OPiOS|Android/i.test(userAgent);
+  return iOS || desktopSafari;
+}
+
 const halfWaveBarCount = waveBars.length / 2;
 const idleHalfWaveLevels = [0.92, 0.8, 0.68, 0.56, 0.46, 0.37, 0.29, 0.22, 0.17, 0.12, 0.09];
 const idleWaveLevels = [...idleHalfWaveLevels].reverse().concat(idleHalfWaveLevels);
@@ -110,17 +132,16 @@ export function RadioProvider({ children }: { children: ReactNode }) {
   const [visualizerReady, setVisualizerReady] = useState(false);
   const [levels, setLevels] = useState(idleWaveLevels);
   const [flyoverDismissed, setFlyoverDismissed] = useState(false);
-  const streamUrl = process.env.NEXT_PUBLIC_RADIO_STREAM_URL || tuneInStreamUrl;
+  const [webkitPlayback, setWebkitPlayback] = useState(false);
+  const streamUrl = toPlaybackStreamUrl(process.env.NEXT_PUBLIC_RADIO_STREAM_URL || tuneInStreamUrl);
   const flyoverVisible = (playing || loading) && !flyoverDismissed;
 
   const prepareAnalyzer = async () => {
     const audio = audioRef.current;
-    if (!audio || typeof window === "undefined") return;
+    const AudioContextConstructor = getAudioContextConstructor();
+    if (!audio || !AudioContextConstructor || usesWebKitMediaPlayback()) return;
 
-    const AudioContextConstructor = window.AudioContext ??
-      (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-    if (!AudioContextConstructor) return;
-
+    audio.crossOrigin = "anonymous";
     if (!audioContextRef.current) audioContextRef.current = new AudioContextConstructor();
     const audioContext = audioContextRef.current;
 
@@ -151,8 +172,28 @@ export function RadioProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     setFailed(false);
     try {
-      await prepareAnalyzer();
+      const webkit = usesWebKitMediaPlayback();
+      audio.playsInline = true;
+      audio.setAttribute("playsinline", "true");
+      audio.setAttribute("webkit-playsinline", "true");
+
+      if (webkit) {
+        audio.removeAttribute("crossorigin");
+      } else {
+        audio.crossOrigin = "anonymous";
+      }
+
+      if (audio.getAttribute("src") !== streamUrl) audio.src = streamUrl;
+      audio.load();
+
+      // Start play() in the same user gesture. Safari rejects it if Web Audio
+      // setup runs first; iOS also expires the gesture if we await too long.
+      const analyzerPromise = webkit
+        ? Promise.resolve()
+        : prepareAnalyzer().catch(() => { setVisualizerReady(false); });
+
       await audio.play();
+      await analyzerPromise;
     } catch {
       setFailed(true);
       setPlaying(false);
@@ -160,6 +201,30 @@ export function RadioProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    const webkit = usesWebKitMediaPlayback();
+    setWebkitPlayback(webkit);
+    if (!audio) return;
+    audio.playsInline = true;
+    audio.setAttribute("playsinline", "true");
+    audio.setAttribute("webkit-playsinline", "true");
+    if (webkit) audio.removeAttribute("crossorigin");
+  }, []);
+
+  useEffect(() => {
+    if (!playing || !visualizerReady || !analyserRef.current) return;
+
+    const analyser = analyserRef.current;
+    const timeout = window.setTimeout(() => {
+      const probe = new Uint8Array(analyser.frequencyBinCount);
+      analyser.getByteFrequencyData(probe);
+      if (!probe.some((value) => value > 0)) setVisualizerReady(false);
+    }, 2500);
+
+    return () => window.clearTimeout(timeout);
+  }, [playing, visualizerReady]);
 
   useEffect(() => {
     if (!playing || !analyserRef.current) {
@@ -218,7 +283,8 @@ export function RadioProvider({ children }: { children: ReactNode }) {
         ref={audioRef}
         src={streamUrl}
         preload="none"
-        crossOrigin="anonymous"
+        playsInline
+        crossOrigin={webkitPlayback ? undefined : "anonymous"}
         onPlaying={() => { setPlaying(true); setFailed(false); setFlyoverDismissed(false); }}
         onPause={() => setPlaying(false)}
         onError={() => { setPlaying(false); setFailed(true); setLoading(false); }}

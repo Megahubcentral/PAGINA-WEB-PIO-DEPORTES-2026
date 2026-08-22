@@ -5,17 +5,26 @@ import test from "node:test";
 const root = new URL("../", import.meta.url);
 
 test("the portal includes its core editorial surfaces", async () => {
-  const [page, layout, portal, widgets, wordpress, styles] = await Promise.all([
+  const [page, layout, portal, widgets, wordpress, styles, category] = await Promise.all([
     readFile(new URL("app/page.tsx", root), "utf8"),
     readFile(new URL("app/layout.tsx", root), "utf8"),
     readFile(new URL("app/components/Portal.tsx", root), "utf8"),
     readFile(new URL("app/components/LiveWidgets.tsx", root), "utf8"),
     readFile(new URL("lib/wordpress.ts", root), "utf8"),
     readFile(new URL("app/globals.css", root), "utf8"),
+    readFile(new URL("app/categoria/[slug]/page.tsx", root), "utf8"),
   ]);
 
   assert.match(page, /Deporte dominicano/);
-  assert.match(page, /Pio TV/);
+  assert.match(page, /Cobertura internacional/);
+  assert.match(page, /\/categoria\/internacional/);
+  assert.match(page, /getInternationalArticles\(5\)/);
+  assert.match(page, /internationalArticles\.slice\(1, 5\)/);
+  assert.match(page, /getBasketballArticles\(5\)/);
+  assert.match(page, /nbaArticles\.slice\(1, 5\)/);
+  assert.match(page, /Más disciplinas/);
+  assert.match(page, /more-sports-grid/);
+  assert.doesNotMatch(page, /Panorama internacional/);
   assert.match(page, /VideoCarousel/);
   assert.match(page, /ScoreStrip/);
   assert.match(page, /AdSlot/);
@@ -30,9 +39,24 @@ test("the portal includes its core editorial surfaces", async () => {
   assert.match(layout, /<BreakingTickerProvider>/);
   assert.match(wordpress, /WORDPRESS_API_URL/);
   assert.match(wordpress, /orderby=date&order=desc/);
+  assert.match(wordpress, /categories_exclude/);
+  assert.match(wordpress, /getInternationalArticles/);
+  assert.match(wordpress, /getInternationalArticlePage/);
+  assert.match(wordpress, /isNationalArticle/);
+  assert.match(wordpress, /isBasketballCategory/);
+  assert.match(wordpress, /getBasketballArticles/);
+  assert.match(wordpress, /per_page=\$\{safePerPage\}&page=\$\{safePage\}/);
   assert.match(wordpress, /_embed=wp:featuredmedia/);
   assert.match(wordpress, /curatedLeadImages/);
+  assert.match(category, /internacional: \{ title: "Cobertura internacional"/);
+  assert.match(category, /nba: \{ title: "NBA & baloncesto"/);
+  assert.match(category, /ncaab: \{ title: "NCAAB"/);
+  assert.match(category, /getInternationalArticlePage/);
+  assert.match(category, /CategoryPagination/);
   assert.match(styles, /aspect-ratio: 7 \/ 5/);
+  assert.match(styles, /\.category-pagination/);
+  assert.match(styles, /\.category-hero--internacional/);
+  assert.match(styles, /\.more-sports-grid/);
   assert.match(styles, /prefers-reduced-motion/);
 });
 
@@ -109,7 +133,7 @@ test("lottery and horse-racing results use scheduled server-side sources and inc
     readFile(new URL("app/components/LotteryHub.tsx", root), "utf8"),
     readFile(new URL("app/components/HorseRacingHub.tsx", root), "utf8"),
     readFile(new URL("lib/lottery-brand.ts", root), "utf8"),
-    readFile(new URL("app/components/Portal.tsx", root), "utf8"),
+    readFile(new URL("app/components/MainNav.tsx", root), "utf8"),
     readFile(new URL("app/globals.css", root), "utf8"),
   ]);
 

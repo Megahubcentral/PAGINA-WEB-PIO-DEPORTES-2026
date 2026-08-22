@@ -6,7 +6,7 @@ import { ScoreStrip } from "./components/Scoreboard";
 import { VideoCarousel } from "./components/VideoCarousel";
 import { LotteryCompact } from "./components/LotteryCompact";
 import { InstagramFeed } from "./components/InstagramFeed";
-import { getCategoryArticles, getFeaturedArticles, getVideoItems, type Article } from "../lib/wordpress";
+import { getArticlesByTag, getBasketballArticles, getCategoryArticles, getInternationalArticles, getVideoItems, type Article } from "../lib/wordpress";
 import { getLotteryFeed } from "../lib/lottery-provider";
 import { getInstagramFeed } from "../lib/instagram-provider";
 
@@ -32,12 +32,12 @@ function interleaveArticlePools(...pools: Article[][]) {
 
 export default async function Home() {
   const [
-    featuredArticles,
+    portadaArticles,
+    destacadosArticles,
     videos,
     nationalArticles,
-    mlbArticles,
+    internationalArticles,
     nbaArticles,
-    footballArticles,
     nflArticles,
     tennisArticles,
     lidomArticles,
@@ -46,12 +46,12 @@ export default async function Home() {
     lotteryFeed,
     instagramFeed,
   ] = await Promise.all([
-    getFeaturedArticles(7),
+    getArticlesByTag("portada", 5),
+    getArticlesByTag("destacados", 8),
     getVideoItems(6),
     getCategoryArticles("nacionales"),
-    getCategoryArticles("mlb"),
-    getCategoryArticles("nba"),
-    getCategoryArticles("futbol"),
+    getInternationalArticles(5),
+    getBasketballArticles(5),
     getCategoryArticles("nfl"),
     getCategoryArticles("tennis"),
     getCategoryArticles("lidom"),
@@ -62,20 +62,18 @@ export default async function Home() {
   ]);
 
   const usedArticles = new Set<string>();
-  const topStories = takeUnique(featuredArticles, 7, usedArticles);
+  const topStories = takeUnique(portadaArticles, 5, usedArticles);
   const hero = topStories[0];
   const sideStories = topStories.slice(1, 3);
-  const latest = topStories.slice(3, 7);
+  const moreStories = topStories.slice(3, 5);
+  const latest = takeUnique(destacadosArticles, 4, usedArticles);
   const nationalStories = takeUnique(nationalArticles, 4, usedArticles);
-  const coverageLead = takeUnique(mlbArticles, 1, usedArticles)[0];
-  const coverageStories = takeUnique(
-    interleaveArticlePools(mlbArticles, tennisArticles, caribbeanArticles, lidomArticles),
-    4,
-    usedArticles,
-  );
-  const nbaLead = takeUnique(nbaArticles, 1, usedArticles)[0];
-  const nbaStories = takeUnique(nbaArticles, 4, usedArticles);
-  const panoramaStory = takeUnique(footballArticles, 1, usedArticles)[0];
+  const coverageLead = internationalArticles[0];
+  const coverageStack = internationalArticles.slice(1, 5);
+  takeUnique(internationalArticles, 5, usedArticles);
+  const nbaLead = nbaArticles[0];
+  const nbaStories = nbaArticles.slice(1, 5);
+  takeUnique(nbaArticles, 5, usedArticles);
   const moreSportsStories = takeUnique(
     interleaveArticlePools(otherArticles, tennisArticles, nflArticles, caribbeanArticles, lidomArticles),
     4,
@@ -92,33 +90,53 @@ export default async function Home() {
           <div className="lead-label"><span /> Portada</div>
           {hero ? (
           <div className="lead-grid">
-            <article className="hero-story">
-              <Link className="hero-media" href={`/noticias/${hero.slug}`}>
-                <img src={hero.image} alt="" fetchPriority="high" />
-                <div className="hero-shade" />
-                <div className="hero-copy">
-                  <span className="hero-category">{hero.category}</span>
-                  <h1>{hero.title}</h1>
-                  <div className="hero-meta"><span>{hero.author}</span><span>{hero.publishedAt}</span></div>
-                </div>
-                {hero.media ? <span className="hero-play">▶</span> : null}
-              </Link>
-            </article>
+            <div className="lead-main">
+              <div className="lead-top">
+                <article className="hero-story">
+                  <Link className="hero-media" href={`/noticias/${hero.slug}`}>
+                    <img src={hero.image} alt="" fetchPriority="high" />
+                    <div className="hero-shade" />
+                    <div className="hero-copy">
+                      <span className="hero-category">{hero.category}</span>
+                      <h1>{hero.title}</h1>
+                      <div className="hero-meta"><span>{hero.author}</span><span>{hero.publishedAt}</span></div>
+                    </div>
+                    {hero.media ? <span className="hero-play">▶</span> : null}
+                  </Link>
+                </article>
 
-            <div className="side-stories">
-              {sideStories.map((article) => (
-                <ArticleCard key={article.id} article={article} compact />
-              ))}
+                <div className="side-stories">
+                  {sideStories.map((article) => (
+                    <ArticleCard key={article.id} article={article} compact />
+                  ))}
+                </div>
+              </div>
+
+              {moreStories.length ? (
+                <div className="lead-more">
+                  {moreStories.map((article) => (
+                    <ArticleCard key={article.id} article={article} compact />
+                  ))}
+                </div>
+              ) : null}
             </div>
 
-            <aside className="latest-panel">
-              <div className="latest-head"><span>Ahora</span><small>Actualizado</small></div>
-              {latest.map((article, index) => (
-                <Link className="latest-row" href={`/noticias/${article.slug}`} key={article.id}>
-                  <span className="latest-number">0{index + 1}</span>
-                  <div><small>{article.category}</small><strong>{article.title}</strong><time>{article.publishedAt}</time></div>
-                </Link>
-              ))}
+            <aside className="lead-aside">
+              {latest.length ? (
+              <div className="latest-panel">
+                <div className="latest-head"><span>Ahora</span><small>Actualizado</small></div>
+                {latest.map((article) => (
+                  <Link className="latest-row" href={`/noticias/${article.slug}`} key={article.id}>
+                    <small>{article.category}</small>
+                    <strong>{article.title}</strong>
+                    <time>{article.publishedAt}</time>
+                  </Link>
+                ))}
+              </div>
+              ) : null}
+              <div className="lead-ad">
+                <AdSlot size="300 × 600" />
+              </div>
             </aside>
           </div>
           ) : null}
@@ -149,12 +167,11 @@ export default async function Home() {
 
         <section className="coverage-section">
           <div className="shell">
-            <SectionHeading kicker="Competiciones" title="Cobertura internacional" />
-            <div className="subsection-title"><h3>Grandes Ligas</h3><Link href="/categoria/mlb">Más MLB →</Link></div>
+            <SectionHeading kicker="Competiciones" title="Cobertura internacional" href="/categoria/internacional" />
             <div className="feature-pair coverage-feature">
               {coverageLead ? <ArticleCard article={coverageLead} /> : null}
               <div className="headline-stack">
-                {coverageStories.map((article) => (
+                {coverageStack.map((article) => (
                   <ArticleCard key={article.id} article={article} compact />
                 ))}
               </div>
@@ -176,7 +193,7 @@ export default async function Home() {
 
         <section className="nba-home-section">
           <div className="shell">
-            <div className="subsection-title"><h3>NBA & baloncesto</h3><Link href="/categoria/nba">Más NBA →</Link></div>
+            <div className="subsection-title"><h3>NBA & baloncesto</h3><Link href="/categoria/nba">Más NBA y baloncesto →</Link></div>
             <div className="feature-pair reverse">
               {nbaLead ? <ArticleCard article={nbaLead} /> : null}
               <div className="headline-stack">
@@ -190,15 +207,11 @@ export default async function Home() {
 
         <LotteryCompact feed={lotteryFeed} />
 
-        <section className="shell closing-grid">
-          <div>
-            <SectionHeading kicker="Fútbol mundial" title="Panorama internacional" href="/categoria/futbol" />
-            <div className="closing-feature">{panoramaStory ? <ArticleCard article={panoramaStory} /> : null}</div>
-          </div>
-          <div>
+        <section className="more-sports-section">
+          <div className="shell">
             <SectionHeading kicker="Polideportivo" title="Más disciplinas" href="/categoria/otros-deportes" />
-            <div className="closing-list">
-              {moreSportsStories.map((article) => <ArticleCard compact key={article.id} article={article} />)}
+            <div className="more-sports-grid">
+              {moreSportsStories.map((article) => <ArticleCard key={article.id} article={article} />)}
             </div>
           </div>
         </section>

@@ -7,9 +7,11 @@ export type Article = {
   excerpt: string;
   category: string;
   categorySlug: string;
+  categorySlugs?: string[];
   image: string;
   author: string;
   publishedAt: string;
+  date?: string;
   content?: string;
   media?: "video" | "audio";
   imageCredit?: string;
@@ -32,6 +34,12 @@ export type VideoItem = {
 };
 
 const pioYoutubeChannel = "https://www.youtube.com/@piodeportes/featured";
+const localNow = Date.now();
+const nationalCategorySlugs = new Set(["nacionales", "nacional"]);
+
+function isoFromNow(msAgo: number) {
+  return new Date(localNow - msAgo).toISOString();
+}
 
 export const fallbackVideos: VideoItem[] = [
   {
@@ -111,9 +119,11 @@ export const fallbackArticles: Article[] = [
       "La selección dominicana volvió a imponer su carácter competitivo y cerró el torneo con una actuación para la historia.",
     category: "Nacionales",
     categorySlug: "nacionales",
+    categorySlugs: ["nacionales"],
     image: "/news/reinas.jpg",
     author: "Pío Deportes",
     publishedAt: "Hace 24 minutos",
+    date: isoFromNow(24 * 60 * 1000),
     media: "video",
   },
   {
@@ -124,9 +134,11 @@ export const fallbackArticles: Article[] = [
       "Una salida dominante marcó la jornada en las Grandes Ligas y encendió la conversación entre los fanáticos.",
     category: "MLB",
     categorySlug: "mlb",
+    categorySlugs: ["mlb"],
     image: "/news/mlb.jpg",
     author: "Redacción Pío",
     publishedAt: "Hace 42 minutos",
+    date: isoFromNow(42 * 60 * 1000),
   },
   {
     id: 3,
@@ -136,9 +148,11 @@ export const fallbackArticles: Article[] = [
       "El receptor está listo para volver al terreno y todas las miradas apuntan a su primer partido.",
     category: "NFL",
     categorySlug: "nfl",
+    categorySlugs: ["nfl"],
     image: "/news/giants.jpg",
     author: "Pío Deportes",
     publishedAt: "Hace 1 hora",
+    date: isoFromNow(60 * 60 * 1000),
   },
   {
     id: 4,
@@ -148,9 +162,11 @@ export const fallbackArticles: Article[] = [
       "La selección neerlandesa apuesta por una nueva idea de juego de cara al próximo gran ciclo internacional.",
     category: "Fútbol",
     categorySlug: "futbol",
+    categorySlugs: ["futbol"],
     image: "/news/futbol.jpg",
     author: "Agencias",
     publishedAt: "Hace 2 horas",
+    date: isoFromNow(2 * 60 * 60 * 1000),
   },
   {
     id: 5,
@@ -160,9 +176,11 @@ export const fallbackArticles: Article[] = [
       "La campeona resolvió los momentos clave y aseguró su lugar en la definición del torneo.",
     category: "Tenis",
     categorySlug: "tennis",
+    categorySlugs: ["tennis"],
     image: "/news/tennis.jpg",
     author: "Pío Deportes",
     publishedAt: "Hace 2 horas",
+    date: isoFromNow(2 * 60 * 60 * 1000 + 12 * 60 * 1000),
   },
   {
     id: 6,
@@ -172,9 +190,11 @@ export const fallbackArticles: Article[] = [
       "La operación abre una etapa distinta para una de las franquicias más reconocidas del deporte mundial.",
     category: "NBA",
     categorySlug: "nba",
+    categorySlugs: ["nba"],
     image: "/news/nba.jpg",
     author: "Redacción Pío",
     publishedAt: "Hace 3 horas",
+    date: isoFromNow(3 * 60 * 60 * 1000),
   },
   {
     id: 7,
@@ -184,9 +204,11 @@ export const fallbackArticles: Article[] = [
       "El conjunto quisqueyano volvió a producir desde temprano y sigue firme en la Serie del Caribe Kids.",
     category: "Béisbol del Caribe",
     categorySlug: "beisbol-del-caribe",
+    categorySlugs: ["beisbol-del-caribe"],
     image: "/news/caribe.jpg",
     author: "Pío Deportes",
     publishedAt: "Hace 4 horas",
+    date: isoFromNow(4 * 60 * 60 * 1000),
     media: "video",
   },
   {
@@ -197,9 +219,11 @@ export const fallbackArticles: Article[] = [
       "Las dominicanas dejaron buenos pasajes, pero no pudieron completar la remontada ante el orden asiático.",
     category: "Voleibol",
     categorySlug: "voleibol",
+    categorySlugs: ["voleibol"],
     image: "/news/voleibol.jpg",
     author: "Pío Deportes",
     publishedAt: "Hace 5 horas",
+    date: isoFromNow(5 * 60 * 60 * 1000),
     media: "video",
   },
 ];
@@ -427,6 +451,7 @@ export const localCategoryArticles: Article[] = Object.entries(localCategoryProf
         excerpt: angle.excerpt,
         category: profile.category,
         categorySlug,
+        categorySlugs: [categorySlug],
         image: editorialImage?.url ?? profile.image,
         imageCredit: editorialImage?.credit,
         imageSourceUrl: editorialImage?.sourceUrl,
@@ -436,6 +461,7 @@ export const localCategoryArticles: Article[] = Object.entries(localCategoryProf
         publishedAt: elapsed < 12
           ? `Hace ${elapsed} hora${elapsed === 1 ? "" : "s"}`
           : `Hace ${Math.ceil((elapsed - 11) / 3)} día${elapsed < 15 ? "" : "s"}`,
+        date: isoFromNow((index * Object.keys(localCategoryProfiles).length + categoryIndex + 8) * 50 * 60 * 1000),
         media: index % 12 === 2 ? "video" as const : index % 17 === 8 ? "audio" as const : undefined,
       };
     }),
@@ -447,8 +473,13 @@ const apiBase = (process.env.WORDPRESS_API_URL || "https://piod.axworkflow.com/w
 
 export const wordpressCategorySlugs = [
   "nacionales",
+  "internacional",
   "mlb",
   "nba",
+  "baloncesto",
+  "ncaab",
+  "baloncesto-fiba",
+  "liga-nacional-de-baloncesto",
   "lidom",
   "futbol",
   "nfl",
@@ -459,6 +490,7 @@ export const wordpressCategorySlugs = [
 
 const categorySlugAliases: Record<string, string> = {
   tenis: "tennis",
+  baloncesto: "nba",
 };
 
 function resolveCategorySlug(slug: string) {
@@ -506,11 +538,40 @@ function displayCategory(terms: WpTerm[]) {
   );
 }
 
+function articleCategorySlugs(terms: WpTerm[]) {
+  return terms
+    .filter((term) => term.taxonomy === "category" && term.slug)
+    .map((term) => resolveCategorySlug(term.slug as string));
+}
+
+export function isNationalArticle(article: Article) {
+  const slugs = [article.categorySlug, ...(article.categorySlugs ?? [])].map((slug) => slug.toLowerCase());
+  if (slugs.some((slug) => nationalCategorySlugs.has(slug))) return true;
+  const name = article.category.trim().toLowerCase();
+  return name === "nacional" || name === "nacionales";
+}
+
+function sortArticlesByNewest(articles: Article[]) {
+  return [...articles].sort((left, right) => {
+    const rightTime = Date.parse(right.date ?? "");
+    const leftTime = Date.parse(left.date ?? "");
+    if (Number.isNaN(rightTime) && Number.isNaN(leftTime)) return 0;
+    if (Number.isNaN(rightTime)) return 1;
+    if (Number.isNaN(leftTime)) return -1;
+    return rightTime - leftTime;
+  });
+}
+
+function localInternationalArticles() {
+  return sortArticlesByNewest(localArticleArchive.filter((article) => !isNationalArticle(article)));
+}
+
 function normalizePost(post: WpPost): Article {
   const media = post?._embedded?.["wp:featuredmedia"]?.[0];
   const terms = post?._embedded?.["wp:term"]?.flat?.() ?? [];
   const category = displayCategory(terms);
   const author = post?._embedded?.author?.[0]?.name;
+  const categorySlugs = articleCategorySlugs(terms);
 
   return {
     id: post.id,
@@ -518,12 +579,14 @@ function normalizePost(post: WpPost): Article {
     title: plainText(post.title?.rendered),
     excerpt: plainText(post.excerpt?.rendered),
     category: category?.name ?? "Actualidad",
-    categorySlug: category?.slug ?? "actualidad",
+    categorySlug: resolveCategorySlug(category?.slug ?? "actualidad"),
+    categorySlugs,
     image:
       media?.media_details?.sizes?.large?.source_url ??
       media?.source_url ??
       "/news/reinas.jpg",
     author: author ?? "Pío Deportes",
+    date: post.date,
     publishedAt: new Intl.DateTimeFormat("es-DO", {
       day: "numeric",
       month: "short",
@@ -575,15 +638,29 @@ function normalizeVideoPost(post: WpPost): VideoItem {
   };
 }
 
-async function wpFetch(path: string) {
+async function wpFetch(path: string): Promise<any> {
+  const result = await wpFetchResult<any>(path);
+  return result?.data ?? null;
+}
+
+async function wpFetchResult<T = unknown>(path: string): Promise<{ data: T; total: number; totalPages: number } | null> {
   if (!apiBase) return null;
   const response = await fetch(`${apiBase}${path}`, {
     next: { revalidate: 120 },
     headers: { Accept: "application/json" },
     signal: AbortSignal.timeout(8000),
   });
+  if (response.status === 400) {
+    return { data: [] as unknown as T, total: 0, totalPages: 0 };
+  }
   if (!response.ok) throw new Error(`WordPress respondió ${response.status}`);
-  return response.json();
+  const total = Number(response.headers.get("X-WP-Total") ?? 0);
+  const totalPages = Number(response.headers.get("X-WP-TotalPages") ?? 0);
+  return {
+    data: (await response.json()) as T,
+    total: Number.isFinite(total) ? total : 0,
+    totalPages: Number.isFinite(totalPages) ? totalPages : 0,
+  };
 }
 
 function mergeUniqueArticles(primary: Article[], editorial: Article[], limit: number) {
@@ -607,41 +684,73 @@ export async function getLatestArticles(limit = 12): Promise<Article[]> {
   }
 }
 
-type WpTermRecord = { id: number };
+type WpTermRecord = { id: number; slug?: string; name?: string };
 
-function mergePostsByDate(groups: WpPost[][], limit: number) {
-  const seen = new Set<number>();
-  return groups
-    .flat()
-    .filter((post) => {
-      if (!post?.id || seen.has(post.id)) return false;
-      seen.add(post.id);
-      return true;
-    })
-    .sort((left, right) => new Date(right.date).getTime() - new Date(left.date).getTime())
-    .slice(0, limit);
+function normalizeCategoryText(value = "") {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
 }
 
-export async function getFeaturedArticles(limit = 7): Promise<Article[]> {
+export function isBasketballCategory(slug = "", name = "") {
+  const text = `${normalizeCategoryText(slug)} ${normalizeCategoryText(name)}`;
+  return (
+    /\bnba\b/.test(text) ||
+    /\bwnba\b/.test(text) ||
+    text.includes("baloncesto") ||
+    text.includes("basket") ||
+    /\bncaab\b/.test(text)
+  );
+}
+
+function localBasketballArticles() {
+  return sortArticlesByNewest(
+    localArticleArchive.filter((article) => isBasketballCategory(article.categorySlug, article.category)),
+  );
+}
+
+async function getBasketballCategoryIds() {
+  const categories = await wpFetch("/categories?per_page=100") as WpTermRecord[] | null;
+  return (categories ?? [])
+    .filter((category) => isBasketballCategory(category.slug, category.name))
+    .map((category) => category.id)
+    .filter(Boolean);
+}
+
+export async function getBasketballArticles(limit = 5): Promise<Article[]> {
+  const localBasketball = localBasketballArticles();
+  const cap = Math.max(1, limit);
+
   try {
-    const [tagTerms, categoryTerms] = await Promise.all([
-      wpFetch("/tags?slug=destacados,destacado") as Promise<WpTermRecord[] | null>,
-      wpFetch("/categories?slug=destacados") as Promise<WpTermRecord[] | null>,
-    ]);
+    const categoryIds = await getBasketballCategoryIds();
+    if (categoryIds.length) {
+      const posts = await wpFetch(
+        `/posts?categories=${categoryIds.join(",")}&per_page=${cap}&orderby=date&order=desc&${embedQuery}`,
+      ) as WpPost[] | null;
+      if (posts?.length) {
+        const fromWordpress = posts.map(normalizePost);
+        if (fromWordpress.length >= cap) return fromWordpress.slice(0, cap);
+        return mergeUniqueArticles(fromWordpress, localBasketball, cap);
+      }
+    }
+  } catch {
+    // Fall through to the local basketball archive.
+  }
+
+  return localBasketball.slice(0, cap);
+}
+
+export async function getArticlesByTag(slug: string, limit = 9): Promise<Article[]> {
+  try {
+    const tagTerms = await wpFetch(`/tags?slug=${encodeURIComponent(slug)}`) as WpTermRecord[] | null;
     const tagIds = (tagTerms ?? []).map((term) => term.id).join(",");
-    const categoryIds = (categoryTerms ?? []).map((term) => term.id).join(",");
-    const embed = "_embed=wp:featuredmedia,wp:term,author";
-    const [taggedPosts, categorizedPosts] = await Promise.all([
-      tagIds
-        ? wpFetch(`/posts?tags=${tagIds}&per_page=${limit}&orderby=date&order=desc&${embed}`) as Promise<WpPost[] | null>
-        : Promise.resolve(null),
-      categoryIds
-        ? wpFetch(`/posts?categories=${categoryIds}&per_page=${limit}&orderby=date&order=desc&${embed}`) as Promise<WpPost[] | null>
-        : Promise.resolve(null),
-    ]);
-    const featured = mergePostsByDate([taggedPosts ?? [], categorizedPosts ?? []], limit).map(normalizePost);
-    if (featured.length >= limit) return featured;
-    if (featured.length) return mergeUniqueArticles(featured, await getLatestArticles(limit), limit);
+    if (tagIds) {
+      const posts = await wpFetch(
+        `/posts?tags=${tagIds}&per_page=${limit}&orderby=date&order=desc&_embed=wp:featuredmedia,wp:term,author`,
+      ) as WpPost[] | null;
+      if (posts?.length) return posts.map(normalizePost);
+    }
   } catch {
     // Fall through to the latest-news backup below.
   }
@@ -660,8 +769,91 @@ export async function getArticleBySlug(slug: string): Promise<Article | undefine
   return localArticleArchive.find((article) => article.slug === slug) ?? fallbackArticles[0];
 }
 
+const embedQuery = "_embed=wp:featuredmedia,wp:term,author";
+export const internationalPageSize = 12;
+
+export type ArticlePage = {
+  articles: Article[];
+  page: number;
+  perPage: number;
+  total: number;
+  totalPages: number;
+};
+
+async function nationalCategoryExcludeIds() {
+  const categories = await wpFetch("/categories?slug=nacionales,nacional") as WpTermRecord[] | null;
+  return (categories ?? []).map((term) => term.id).filter(Boolean);
+}
+
+function paginateArticles(articles: Article[], page: number, perPage: number): ArticlePage {
+  const total = articles.length;
+  const totalPages = Math.max(1, Math.ceil(total / perPage) || 1);
+  const currentPage = Math.min(Math.max(1, page), totalPages);
+  const start = (currentPage - 1) * perPage;
+  return {
+    articles: articles.slice(start, start + perPage),
+    page: currentPage,
+    perPage,
+    total,
+    totalPages,
+  };
+}
+
+export async function getInternationalArticlePage(page = 1, perPage = internationalPageSize): Promise<ArticlePage> {
+  const safePerPage = Math.min(30, Math.max(1, perPage));
+  const safePage = Math.max(1, Math.floor(page) || 1);
+  const localInternational = localInternationalArticles();
+
+  try {
+    const excludeIds = await nationalCategoryExcludeIds();
+    const excludeQuery = excludeIds.length ? `&categories_exclude=${excludeIds.join(",")}` : "";
+    const result = await wpFetchResult<WpPost[]>(
+      `/posts?orderby=date&order=desc${excludeQuery}&per_page=${safePerPage}&page=${safePage}&${embedQuery}`,
+    );
+    if (result && Array.isArray(result.data)) {
+      const articles = result.data.map(normalizePost).filter((article) => !isNationalArticle(article));
+      if (articles.length || result.totalPages > 0 || result.total > 0) {
+        const totalPages = Math.max(1, result.totalPages || (result.total ? Math.ceil(result.total / safePerPage) : 1));
+        return {
+          articles,
+          page: Math.min(safePage, totalPages),
+          perPage: safePerPage,
+          total: result.total || articles.length,
+          totalPages,
+        };
+      }
+      if (safePage > 1) {
+        return {
+          articles: [],
+          page: safePage,
+          perPage: safePerPage,
+          total: 0,
+          totalPages: Math.max(1, safePage - 1),
+        };
+      }
+    }
+  } catch {
+    // Fall through to the local international archive.
+  }
+
+  return paginateArticles(localInternational, safePage, safePerPage);
+}
+
+export async function getInternationalArticles(limit = 5): Promise<Article[]> {
+  const { articles } = await getInternationalArticlePage(1, limit);
+  if (articles.length >= limit) return articles.slice(0, limit);
+  return mergeUniqueArticles(articles, localInternationalArticles(), limit);
+}
+
 export async function getCategoryArticles(slug: string): Promise<Article[]> {
   const resolvedSlug = resolveCategorySlug(slug);
+  if (resolvedSlug === "internacional") {
+    return getInternationalArticles(articlesPerCategory);
+  }
+  if (resolvedSlug === "nba") {
+    return getBasketballArticles(articlesPerCategory);
+  }
+
   const categoryEditorial = [
     ...fallbackArticles.filter((article) => article.categorySlug === resolvedSlug || article.categorySlug === slug),
     ...localCategoryArticles.filter((article) => article.categorySlug === resolvedSlug || article.categorySlug === slug),
@@ -671,7 +863,7 @@ export async function getCategoryArticles(slug: string): Promise<Article[]> {
     const categories = await wpFetch(`/categories?slug=${encodeURIComponent(resolvedSlug)}`);
     if (categories?.[0]) {
       const posts = await wpFetch(
-        `/posts?categories=${categories[0].id}&per_page=${articlesPerCategory}&_embed=wp:featuredmedia,wp:term,author`,
+        `/posts?categories=${categories[0].id}&per_page=${articlesPerCategory}&orderby=date&order=desc&${embedQuery}`,
       );
       if (posts?.length) {
         const normalized = posts.map(normalizePost);

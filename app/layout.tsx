@@ -5,6 +5,7 @@ import { NewsletterPopup } from "./components/Engagement";
 import { BreakingTickerProvider, RadioProvider } from "./components/LiveWidgets";
 import { getSiteUrl } from "../lib/site";
 import "./globals.css";
+import "./components/MainNav.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL(getSiteUrl()),
