@@ -6,7 +6,7 @@ import { ScoreStrip } from "./components/Scoreboard";
 import { VideoCarousel } from "./components/VideoCarousel";
 import { LotteryCompact } from "./components/LotteryCompact";
 import { InstagramFeed } from "./components/InstagramFeed";
-import { getArticlesByTag, getBasketballArticles, getCategoryArticles, getInternationalArticles, getVideoItems, type Article } from "../lib/wordpress";
+import { getArticlesByTag, getBasketballArticles, getCategoryArticles, getInternationalArticles, getVideoItems, homeNewsQuery, type Article } from "../lib/wordpress";
 import { getLotteryFeed } from "../lib/lottery-provider";
 import { getInstagramFeed } from "../lib/instagram-provider";
 
@@ -47,16 +47,16 @@ export default async function Home() {
     instagramFeed,
   ] = await Promise.all([
     getArticlesByTag("portada", 5),
-    getArticlesByTag("destacados", 8),
+    getArticlesByTag("destacados", 8, homeNewsQuery),
     getVideoItems(6),
-    getCategoryArticles("nacionales"),
-    getInternationalArticles(5),
-    getBasketballArticles(5),
-    getCategoryArticles("nfl"),
-    getCategoryArticles("tennis"),
-    getCategoryArticles("lidom"),
-    getCategoryArticles("beisbol-del-caribe"),
-    getCategoryArticles("otros-deportes"),
+    getCategoryArticles("nacionales", homeNewsQuery),
+    getInternationalArticles(5, homeNewsQuery),
+    getBasketballArticles(5, homeNewsQuery),
+    getCategoryArticles("nfl", homeNewsQuery),
+    getCategoryArticles("tennis", homeNewsQuery),
+    getCategoryArticles("lidom", homeNewsQuery),
+    getCategoryArticles("beisbol-del-caribe", homeNewsQuery),
+    getCategoryArticles("otros-deportes", homeNewsQuery),
     getLotteryFeed(),
     getInstagramFeed(),
   ]);

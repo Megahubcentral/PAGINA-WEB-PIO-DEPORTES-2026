@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./components/MainNav.css";
 
 :root {
   --red: #df0000;
@@ -41,7 +42,7 @@ button, input, select, textarea { font: inherit; }
 .utility-links { display: flex; align-items: center; gap: 20px; text-transform: uppercase; font-weight: 700; }
 .utility-links a:hover { color: var(--white); }
 
-.site-header { background: var(--white); }
+.site-header { position: relative; z-index: 50; background: var(--white); }
 .masthead { min-height: 126px; display: grid; grid-template-columns: 215px 1fr 180px; gap: 35px; align-items: center; }
 .brand { width: 205px; height: 102px; display: flex; align-items: center; }
 .brand img { width: 100%; height: 100%; object-fit: contain; }
@@ -1159,4 +1160,17 @@ button, input, select, textarea { font: inherit; }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
+
+@media (min-width: 1051px) {
+  .main-nav .nav-toggle,
+  .main-nav .nav-toggle-text,
+  .main-nav .nav-more-mobile { display: none !important; }
+}
+
+@media (max-width: 1050px) {
+  .main-nav .nav-toggle { display: inline-flex !important; }
+  .main-nav .nav-panel { display: none !important; }
+  .main-nav .nav-checkbox:checked ~ .nav-panel { display: block !important; }
+  .main-nav .nav-more-desktop { display: none !important; }
 }

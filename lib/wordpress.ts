@@ -18,6 +18,7 @@ export type Article = {
   imageSourceUrl?: string;
   imageLicense?: string;
   imageLicenseUrl?: string;
+  tags?: string[];
 };
 
 export type VideoItem = {
@@ -544,6 +545,12 @@ function articleCategorySlugs(terms: WpTerm[]) {
     .map((term) => resolveCategorySlug(term.slug as string));
 }
 
+function articleTagSlugs(terms: WpTerm[]) {
+  return terms
+    .filter((term) => term.taxonomy === "post_tag" && term.slug)
+    .map((term) => term.slug as string);
+}
+
 export function isNationalArticle(article: Article) {
   const slugs = [article.categorySlug, ...(article.categorySlugs ?? [])].map((slug) => slug.toLowerCase());
   if (slugs.some((slug) => nationalCategorySlugs.has(slug))) return true;
@@ -581,6 +588,7 @@ function normalizePost(post: WpPost): Article {
     category: category?.name ?? "Actualidad",
     categorySlug: resolveCategorySlug(category?.slug ?? "actualidad"),
     categorySlugs,
+    tags: articleTagSlugs(terms),
     image:
       media?.media_details?.sizes?.large?.source_url ??
       media?.source_url ??
@@ -686,6 +694,30 @@ export async function getLatestArticles(limit = 12): Promise<Article[]> {
 
 type WpTermRecord = { id: number; slug?: string; name?: string };
 
+export type ArticleQueryOptions = {
+  excludeTags?: string[];
+};
+
+export const homeNewsQuery: ArticleQueryOptions = { excludeTags: ["portada"] };
+
+async function getTagIdsBySlug(slugs: string[]) {
+  const unique = [...new Set(slugs.map((slug) => slug.trim()).filter(Boolean))];
+  if (!unique.length) return [];
+  const terms = await wpFetch(`/tags?slug=${encodeURIComponent(unique.join(","))}`) as WpTermRecord[] | null;
+  return (terms ?? []).map((term) => term.id).filter(Boolean);
+}
+
+async function tagExcludeQuery(options?: ArticleQueryOptions) {
+  const ids = await getTagIdsBySlug(options?.excludeTags ?? []);
+  return ids.length ? `&tags_exclude=${ids.join(",")}` : "";
+}
+
+function withoutExcludedTags(articles: Article[], options?: ArticleQueryOptions) {
+  const excluded = new Set((options?.excludeTags ?? []).map((slug) => slug.toLowerCase()));
+  if (!excluded.size) return articles;
+  return articles.filter((article) => !(article.tags ?? []).some((tag) => excluded.has(tag.toLowerCase())));
+}
+
 function normalizeCategoryText(value = "") {
   return value
     .toLowerCase()
@@ -718,18 +750,21 @@ async function getBasketballCategoryIds() {
     .filter(Boolean);
 }
 
-export async function getBasketballArticles(limit = 5): Promise<Article[]> {
-  const localBasketball = localBasketballArticles();
+export async function getBasketballArticles(limit = 5, options?: ArticleQueryOptions): Promise<Article[]> {
+  const localBasketball = withoutExcludedTags(localBasketballArticles(), options);
   const cap = Math.max(1, limit);
 
   try {
-    const categoryIds = await getBasketballCategoryIds();
+    const [categoryIds, excludeQuery] = await Promise.all([
+      getBasketballCategoryIds(),
+      tagExcludeQuery(options),
+    ]);
     if (categoryIds.length) {
       const posts = await wpFetch(
-        `/posts?categories=${categoryIds.join(",")}&per_page=${cap}&orderby=date&order=desc&${embedQuery}`,
+        `/posts?categories=${categoryIds.join(",")}&per_page=${cap}&orderby=date&order=desc${excludeQuery}&${embedQuery}`,
       ) as WpPost[] | null;
       if (posts?.length) {
-        const fromWordpress = posts.map(normalizePost);
+        const fromWordpress = withoutExcludedTags(posts.map(normalizePost), options);
         if (fromWordpress.length >= cap) return fromWordpress.slice(0, cap);
         return mergeUniqueArticles(fromWordpress, localBasketball, cap);
       }
@@ -741,20 +776,23 @@ export async function getBasketballArticles(limit = 5): Promise<Article[]> {
   return localBasketball.slice(0, cap);
 }
 
-export async function getArticlesByTag(slug: string, limit = 9): Promise<Article[]> {
+export async function getArticlesByTag(slug: string, limit = 9, options?: ArticleQueryOptions): Promise<Article[]> {
   try {
-    const tagTerms = await wpFetch(`/tags?slug=${encodeURIComponent(slug)}`) as WpTermRecord[] | null;
+    const [tagTerms, excludeQuery] = await Promise.all([
+      wpFetch(`/tags?slug=${encodeURIComponent(slug)}`) as Promise<WpTermRecord[] | null>,
+      tagExcludeQuery(options),
+    ]);
     const tagIds = (tagTerms ?? []).map((term) => term.id).join(",");
     if (tagIds) {
       const posts = await wpFetch(
-        `/posts?tags=${tagIds}&per_page=${limit}&orderby=date&order=desc&_embed=wp:featuredmedia,wp:term,author`,
+        `/posts?tags=${tagIds}&per_page=${limit}&orderby=date&order=desc${excludeQuery}&${embedQuery}`,
       ) as WpPost[] | null;
-      if (posts?.length) return posts.map(normalizePost);
+      if (posts?.length) return withoutExcludedTags(posts.map(normalizePost), options);
     }
   } catch {
     // Fall through to the latest-news backup below.
   }
-  return getLatestArticles(limit);
+  return withoutExcludedTags(await getLatestArticles(limit), options);
 }
 
 export async function getArticleBySlug(slug: string): Promise<Article | undefined> {
@@ -799,19 +837,25 @@ function paginateArticles(articles: Article[], page: number, perPage: number): A
   };
 }
 
-export async function getInternationalArticlePage(page = 1, perPage = internationalPageSize): Promise<ArticlePage> {
+export async function getInternationalArticlePage(page = 1, perPage = internationalPageSize, options?: ArticleQueryOptions): Promise<ArticlePage> {
   const safePerPage = Math.min(30, Math.max(1, perPage));
   const safePage = Math.max(1, Math.floor(page) || 1);
-  const localInternational = localInternationalArticles();
+  const localInternational = withoutExcludedTags(localInternationalArticles(), options);
 
   try {
-    const excludeIds = await nationalCategoryExcludeIds();
+    const [excludeIds, tagExclude] = await Promise.all([
+      nationalCategoryExcludeIds(),
+      tagExcludeQuery(options),
+    ]);
     const excludeQuery = excludeIds.length ? `&categories_exclude=${excludeIds.join(",")}` : "";
     const result = await wpFetchResult<WpPost[]>(
-      `/posts?orderby=date&order=desc${excludeQuery}&per_page=${safePerPage}&page=${safePage}&${embedQuery}`,
+      `/posts?orderby=date&order=desc${excludeQuery}${tagExclude}&per_page=${safePerPage}&page=${safePage}&${embedQuery}`,
     );
     if (result && Array.isArray(result.data)) {
-      const articles = result.data.map(normalizePost).filter((article) => !isNationalArticle(article));
+      const articles = withoutExcludedTags(
+        result.data.map(normalizePost).filter((article) => !isNationalArticle(article)),
+        options,
+      );
       if (articles.length || result.totalPages > 0 || result.total > 0) {
         const totalPages = Math.max(1, result.totalPages || (result.total ? Math.ceil(result.total / safePerPage) : 1));
         return {
@@ -839,34 +883,37 @@ export async function getInternationalArticlePage(page = 1, perPage = internatio
   return paginateArticles(localInternational, safePage, safePerPage);
 }
 
-export async function getInternationalArticles(limit = 5): Promise<Article[]> {
-  const { articles } = await getInternationalArticlePage(1, limit);
+export async function getInternationalArticles(limit = 5, options?: ArticleQueryOptions): Promise<Article[]> {
+  const { articles } = await getInternationalArticlePage(1, limit, options);
   if (articles.length >= limit) return articles.slice(0, limit);
-  return mergeUniqueArticles(articles, localInternationalArticles(), limit);
+  return mergeUniqueArticles(articles, withoutExcludedTags(localInternationalArticles(), options), limit);
 }
 
-export async function getCategoryArticles(slug: string): Promise<Article[]> {
+export async function getCategoryArticles(slug: string, options?: ArticleQueryOptions): Promise<Article[]> {
   const resolvedSlug = resolveCategorySlug(slug);
   if (resolvedSlug === "internacional") {
-    return getInternationalArticles(articlesPerCategory);
+    return getInternationalArticles(articlesPerCategory, options);
   }
   if (resolvedSlug === "nba") {
-    return getBasketballArticles(articlesPerCategory);
+    return getBasketballArticles(articlesPerCategory, options);
   }
 
-  const categoryEditorial = [
+  const categoryEditorial = withoutExcludedTags([
     ...fallbackArticles.filter((article) => article.categorySlug === resolvedSlug || article.categorySlug === slug),
     ...localCategoryArticles.filter((article) => article.categorySlug === resolvedSlug || article.categorySlug === slug),
-  ];
+  ], options);
 
   try {
-    const categories = await wpFetch(`/categories?slug=${encodeURIComponent(resolvedSlug)}`);
+    const [categories, excludeQuery] = await Promise.all([
+      wpFetch(`/categories?slug=${encodeURIComponent(resolvedSlug)}`),
+      tagExcludeQuery(options),
+    ]);
     if (categories?.[0]) {
       const posts = await wpFetch(
-        `/posts?categories=${categories[0].id}&per_page=${articlesPerCategory}&orderby=date&order=desc&${embedQuery}`,
+        `/posts?categories=${categories[0].id}&per_page=${articlesPerCategory}&orderby=date&order=desc${excludeQuery}&${embedQuery}`,
       );
       if (posts?.length) {
-        const normalized = posts.map(normalizePost);
+        const normalized = withoutExcludedTags(posts.map(normalizePost), options);
         return mergeUniqueArticles(normalized, categoryEditorial, articlesPerCategory);
       }
     }
@@ -875,7 +922,7 @@ export async function getCategoryArticles(slug: string): Promise<Article[]> {
   }
   return categoryEditorial.length
     ? mergeUniqueArticles([], categoryEditorial, articlesPerCategory)
-    : localArticleArchive.slice(0, articlesPerCategory);
+    : withoutExcludedTags(localArticleArchive, options).slice(0, articlesPerCategory);
 }
 
 export async function getVideoItems(limit = 8): Promise<VideoItem[]> {

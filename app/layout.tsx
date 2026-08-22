@@ -34,6 +34,9 @@ export const metadata: Metadata = {
     description: "Noticias, resultados, radio y video para la fanaticada deportiva.",
     images: ["/og.png"],
   },
+  other: {
+    "google-adsense-account": "ca-pub-3350123194403510",
+  },
 };
 
 export const viewport: Viewport = {
