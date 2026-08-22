@@ -9,7 +9,7 @@ importers:
   .:
     dependencies:
       '@heroicons/react':
-        specifier: ^2.2.0
+        specifier: 2.2.0
         version: 2.2.0(react@19.2.6)
       '@vercel/analytics':
         specifier: 2.0.1
