@@ -27,6 +27,11 @@ function getAudioContextConstructor() {
     (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
 }
 
+function enableInlineAudio(audio: HTMLAudioElement) {
+  audio.setAttribute("playsinline", "true");
+  audio.setAttribute("webkit-playsinline", "true");
+}
+
 function usesWebKitMediaPlayback() {
   if (typeof navigator === "undefined") return false;
   const userAgent = navigator.userAgent;
@@ -173,9 +178,7 @@ export function RadioProvider({ children }: { children: ReactNode }) {
     setFailed(false);
     try {
       const webkit = usesWebKitMediaPlayback();
-      audio.playsInline = true;
-      audio.setAttribute("playsinline", "true");
-      audio.setAttribute("webkit-playsinline", "true");
+      enableInlineAudio(audio);
 
       if (webkit) {
         audio.removeAttribute("crossorigin");
@@ -207,9 +210,7 @@ export function RadioProvider({ children }: { children: ReactNode }) {
     const webkit = usesWebKitMediaPlayback();
     setWebkitPlayback(webkit);
     if (!audio) return;
-    audio.playsInline = true;
-    audio.setAttribute("playsinline", "true");
-    audio.setAttribute("webkit-playsinline", "true");
+    enableInlineAudio(audio);
     if (webkit) audio.removeAttribute("crossorigin");
   }, []);
 
