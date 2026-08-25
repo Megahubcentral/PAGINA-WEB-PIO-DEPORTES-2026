@@ -54,7 +54,8 @@ test("the portal includes its core editorial surfaces", async () => {
   assert.match(wordpress, /isBasketballCategory/);
   assert.match(wordpress, /getBasketballArticles/);
   assert.match(wordpress, /per_page=\$\{safePerPage\}&page=\$\{safePage\}/);
-  assert.match(wordpress, /_embed=wp:featuredmedia/);
+  assert.match(wordpress, /decodeHtmlEntities/);
+  assert.match(wordpress, /decodeWordpressHtml/);
   assert.match(wordpress, /curatedLeadImages/);
   assert.match(category, /internacional: \{ title: "Cobertura internacional"/);
   assert.match(category, /nba: \{ title: "NBA & baloncesto"/);

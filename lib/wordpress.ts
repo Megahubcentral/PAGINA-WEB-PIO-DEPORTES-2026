@@ -517,16 +517,65 @@ type WpPost = {
   };
 };
 
+const htmlNamedEntities: Record<string, string> = {
+  nbsp: " ",
+  amp: "&",
+  quot: '"',
+  apos: "'",
+  lt: "<",
+  gt: ">",
+  ndash: "–",
+  mdash: "—",
+  hellip: "…",
+  lsquo: "‘",
+  rsquo: "’",
+  ldquo: "“",
+  rdquo: "”",
+  sbquo: "‚",
+  bdquo: "„",
+  laquo: "«",
+  raquo: "»",
+  lsaquo: "‹",
+  rsaquo: "›",
+  bull: "•",
+  middot: "·",
+  trade: "™",
+  copy: "©",
+  reg: "®",
+  deg: "°",
+  times: "×",
+  divide: "÷",
+  euro: "€",
+  pound: "£",
+  yen: "¥",
+  cent: "¢",
+};
+
+function fromHtmlCodePoint(code: number) {
+  if (!Number.isInteger(code) || code < 0 || code > 0x10ffff) return "";
+  if (code >= 0xd800 && code <= 0xdfff) return "";
+  return String.fromCodePoint(code);
+}
+
+function decodeHtmlEntities(value = "") {
+  const decodeOnce = (input: string) =>
+    input
+      .replace(/&amp;/gi, "&")
+      .replace(/&#(\d+);/g, (_, code: string) => fromHtmlCodePoint(Number(code)))
+      .replace(/&#x([\da-f]+);/gi, (_, code: string) => fromHtmlCodePoint(Number.parseInt(code, 16)))
+      .replace(/&([a-z]+);/gi, (match, name: string) => htmlNamedEntities[name.toLowerCase()] ?? match);
+
+  return decodeOnce(decodeOnce(value));
+}
+
 function plainText(value = "") {
-  return value
-    .replace(/<[^>]*>/g, " ")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&#8217;|&rsquo;/g, "’")
-    .replace(/&#8230;|&hellip;/g, "…")
-    .replace(/&amp;/g, "&")
-    .replace(/&quot;/g, '"')
+  return decodeHtmlEntities(value.replace(/<[^>]*>/g, " "))
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function decodeWordpressHtml(value = "") {
+  return value.replace(/&amp;(#(?:\d+|x[\da-f]+)|[a-z]+);/gi, "&$1");
 }
 
 const editorialCategorySlugs = new Set(["destacados", "uncategorized"]);
@@ -585,7 +634,7 @@ function normalizePost(post: WpPost): Article {
     slug: post.slug,
     title: plainText(post.title?.rendered),
     excerpt: plainText(post.excerpt?.rendered),
-    category: category?.name ?? "Actualidad",
+    category: decodeHtmlEntities(category?.name ?? "Actualidad"),
     categorySlug: resolveCategorySlug(category?.slug ?? "actualidad"),
     categorySlugs,
     tags: articleTagSlugs(terms),
@@ -593,7 +642,7 @@ function normalizePost(post: WpPost): Article {
       media?.media_details?.sizes?.large?.source_url ??
       media?.source_url ??
       "/news/reinas.jpg",
-    author: author ?? "Pío Deportes",
+    author: decodeHtmlEntities(author ?? "Pío Deportes"),
     date: post.date,
     publishedAt: new Intl.DateTimeFormat("es-DO", {
       day: "numeric",
@@ -601,7 +650,7 @@ function normalizePost(post: WpPost): Article {
       hour: "numeric",
       minute: "2-digit",
     }).format(new Date(post.date)),
-    content: post.content?.rendered,
+    content: post.content?.rendered ? decodeWordpressHtml(post.content.rendered) : undefined,
     media:
       post.format === "video" || /wp-block-video|youtube|vimeo/i.test(post.content?.rendered ?? "")
         ? "video"
