@@ -208,11 +208,11 @@ button, input, select, textarea { font: inherit; }
 @media (max-width: 1180px) {
   .coverage-layout .coverage-feature { grid-template-columns: 1fr; }
 }
-.subsection-title { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+.subsection-title { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
 .nba-home-section { padding: 52px 0 58px; background: var(--white); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
-.subsection-title h3 { margin: 0; font-family: var(--display); font-size: 24px; text-transform: uppercase; }
-.subsection-title h3::before { content: ""; display: inline-block; width: 5px; height: 22px; background: var(--red); margin-right: 10px; vertical-align: -3px; }
-.subsection-title a { color: var(--muted); font-size: 10px; text-transform: uppercase; font-weight: 800; letter-spacing: .08em; }
+.subsection-heading { margin: 0; font-family: var(--display); font-size: 24px; font-weight: 800; text-transform: uppercase; }
+.subsection-heading::before { content: ""; display: inline-block; width: 5px; height: 22px; background: var(--red); margin-right: 10px; vertical-align: -3px; }
+.subsection-title a { color: var(--muted); font-size: 10px; text-transform: uppercase; font-weight: 800; letter-spacing: .08em; white-space: nowrap; }
 .feature-pair { display: grid; grid-template-columns: 1.15fr 1fr; gap: 25px; }
 .feature-pair > .article-card .article-title { font-size: 33px; }
 .coverage-feature { align-items: stretch; }

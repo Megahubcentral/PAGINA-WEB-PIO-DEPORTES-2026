@@ -206,7 +206,10 @@ export default async function Home() {
 
         <section className="nba-home-section">
           <div className="shell">
-            <div className="subsection-title"><h3>NBA & baloncesto</h3><Link href="/categoria/nba">Más NBA y baloncesto →</Link></div>
+            <div className="subsection-title">
+              <strong className="subsection-heading">NBA & baloncesto</strong>
+              <Link href="/categoria/nba">Más NBA y baloncesto →</Link>
+            </div>
             <div className="feature-pair reverse">
               {nbaLead ? <ArticleCard article={nbaLead} /> : null}
               <div className="headline-stack">
