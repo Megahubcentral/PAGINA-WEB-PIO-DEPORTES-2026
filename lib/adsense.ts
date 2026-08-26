@@ -3,5 +3,4 @@ export const ADSENSE_CLIENT =
 
 export const ADSENSE_SLOTS = {
   belowPortada: "9464372100",
-  pageBottom: "9464372100",
 } as const;
