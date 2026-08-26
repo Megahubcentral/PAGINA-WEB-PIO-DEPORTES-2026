@@ -1,6 +1,8 @@
 /* eslint-disable @next/next/no-img-element -- Local editorial assets are pre-compressed and WordPress can return remote media. */
 import Link from "next/link";
 import { AudioPlayer, AdSlot } from "./components/LiveWidgets";
+import { RotatingHomeSidebarAd } from "./components/DirectAds";
+import { ADSENSE_SLOTS } from "../lib/adsense";
 import { ArticleCard, SectionHeading, SiteFooter, SiteHeader } from "./components/Portal";
 import { ScoreStrip } from "./components/Scoreboard";
 import { VideoCarousel } from "./components/VideoCarousel";
@@ -135,14 +137,16 @@ export default async function Home() {
               </div>
               ) : null}
               <div className="lead-ad">
-                <AdSlot size="300 × 600" />
+                <RotatingHomeSidebarAd lane="primary" />
               </div>
             </aside>
           </div>
           ) : null}
         </section>
 
-        <div className="shell wide-ad"><AdSlot /></div>
+        <div className="shell wide-ad">
+          <AdSlot slot={ADSENSE_SLOTS.belowPortada} />
+        </div>
 
         <section className="media-section" id="multimedia">
           <div className="shell">
@@ -168,13 +172,22 @@ export default async function Home() {
         <section className="coverage-section">
           <div className="shell">
             <SectionHeading kicker="Competiciones" title="Cobertura internacional" href="/categoria/internacional" />
-            <div className="feature-pair coverage-feature">
-              {coverageLead ? <ArticleCard article={coverageLead} /> : null}
-              <div className="headline-stack">
-                {coverageStack.map((article) => (
-                  <ArticleCard key={article.id} article={article} compact />
-                ))}
+            <div className="lead-grid coverage-layout">
+              <div className="coverage-main">
+                <div className="feature-pair coverage-feature">
+                  {coverageLead ? <ArticleCard article={coverageLead} /> : null}
+                  <div className="headline-stack">
+                    {coverageStack.map((article) => (
+                      <ArticleCard key={article.id} article={article} compact />
+                    ))}
+                  </div>
+                </div>
               </div>
+              <aside className="lead-aside">
+                <div className="lead-ad">
+                  <RotatingHomeSidebarAd lane="secondary" />
+                </div>
+              </aside>
             </div>
 
             <div className="agenda-card agenda-horizontal">

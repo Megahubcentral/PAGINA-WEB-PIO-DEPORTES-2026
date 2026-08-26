@@ -1,8 +1,8 @@
 import type { Metadata, Viewport } from "next";
-import Script from "next/script";
 import { Analytics } from "@vercel/analytics/next";
 import { NewsletterPopup } from "./components/Engagement";
 import { BreakingTickerProvider, RadioProvider } from "./components/LiveWidgets";
+import { ADSENSE_CLIENT } from "../lib/adsense";
 import { getSiteUrl } from "../lib/site";
 import "./globals.css";
 import "./components/MainNav.css";
@@ -35,7 +35,7 @@ export const metadata: Metadata = {
     images: ["/og.png"],
   },
   other: {
-    "google-adsense-account": "ca-pub-3350123194403510",
+    "google-adsense-account": ADSENSE_CLIENT,
   },
 };
 
@@ -44,10 +44,15 @@ export const viewport: Viewport = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  const adsenseClient = process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_CLIENT;
-
   return (
     <html lang="es" data-scroll-behavior="smooth">
+      <head>
+        <script
+          async
+          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`}
+          crossOrigin="anonymous"
+        />
+      </head>
       <body>
         <RadioProvider>
           <BreakingTickerProvider>
@@ -57,14 +62,6 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           </BreakingTickerProvider>
         </RadioProvider>
       </body>
-      {adsenseClient ? (
-        <Script
-          async
-          strategy="afterInteractive"
-          crossOrigin="anonymous"
-          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClient}`}
-        />
-      ) : null}
     </html>
   );
 }

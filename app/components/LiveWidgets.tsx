@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
+import { ADSENSE_CLIENT } from "../../lib/adsense";
 
 export type BreakingHeadline = {
   title: string;
@@ -492,15 +493,18 @@ export function AdSlot({
   slot?: string;
   creative?: DirectAdCreative;
 }) {
-  const client = process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_CLIENT;
+  const client = ADSENSE_CLIENT;
   const configuredSlot =
     slot ??
     (size.includes("300")
       ? process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_RECTANGLE_SLOT
       : process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_TOP_SLOT);
+  const insRef = useRef<HTMLModElement>(null);
 
   useEffect(() => {
     if (creative || !client || !configuredSlot) return;
+    const node = insRef.current;
+    if (!node || node.getAttribute("data-adsbygoogle-status")) return;
     try {
       const ads = window as typeof window & { adsbygoogle?: unknown[] };
       (ads.adsbygoogle = ads.adsbygoogle || []).push({});
@@ -551,6 +555,7 @@ export function AdSlot({
   if (client && configuredSlot) {
     return (
       <ins
+        ref={insRef}
         className="adsbygoogle"
         style={{ display: "block" }}
         data-ad-client={client}
