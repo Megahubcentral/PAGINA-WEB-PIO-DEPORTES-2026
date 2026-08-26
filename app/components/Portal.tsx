@@ -68,8 +68,10 @@ export function ArticleCard({ article, compact = false }: { article: Article; co
       </Link>
       <div className="article-body">
         <Link className="category-link" href={`/categoria/${article.categorySlug}`}>{article.category}</Link>
-        <h3><Link href={`/noticias/${article.slug}`}>{article.title}</Link></h3>
-        {!compact ? <p>{article.excerpt}</p> : null}
+        <Link className="article-copy" href={`/noticias/${article.slug}`}>
+          <strong className="article-title">{article.title}</strong>
+          {!compact ? <span className="article-excerpt">{article.excerpt}</span> : null}
+        </Link>
         <div className="story-meta"><span>{article.author}</span><span>{article.publishedAt}</span></div>
       </div>
     </article>

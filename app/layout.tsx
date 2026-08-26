@@ -48,11 +48,6 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="es" data-scroll-behavior="smooth">
       <head>
         <script
-          dangerouslySetInnerHTML={{
-            __html: `(window.adsbygoogle=window.adsbygoogle||[]).push({google_ad_client:${JSON.stringify(ADSENSE_CLIENT)},enable_page_level_ads:false,overlays:{bottom:false}});`,
-          }}
-        />
-        <script
           async
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
           crossOrigin="anonymous"
