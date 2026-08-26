@@ -229,7 +229,9 @@ export default async function Home() {
           </div>
         </section>
 
-        <div className="shell wide-ad bottom-ad"><AdSlot /></div>
+        <div className="shell wide-ad bottom-ad">
+          <AdSlot slot={ADSENSE_SLOTS.pageBottom} />
+        </div>
       </main>
       <SiteFooter />
     </>
