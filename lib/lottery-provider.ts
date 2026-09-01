@@ -1,3 +1,5 @@
+import { unstable_cache } from "next/cache";
+
 export type LotterySourceType = "official" | "informative";
 
 export type LotteryResult = {
@@ -36,6 +38,8 @@ export type LotteryFeed = {
   nextRefreshAt: string;
   refreshSeconds: number;
 };
+
+export const LOTTERY_CACHE_TAG = "lotteries";
 
 const AST_OFFSET_MS = 4 * 60 * 60 * 1000;
 const LOTOREAL_API = "https://ov.gruporeal.com.do/api/lr";
@@ -86,6 +90,10 @@ function astClock(now = new Date()) {
   };
 }
 
+function utcFromAst(year: number, month: number, date: number, minutes: number) {
+  return Date.UTC(year, month, date, Math.floor(minutes / 60) + 4, minutes % 60);
+}
+
 function refreshPlan(now = new Date()) {
   const clock = astClock(now);
   const regularWindows = [12 * 60 + 55, 14 * 60 + 30, 19 * 60 + 55, 20 * 60 + 55, 21 * 60];
@@ -94,26 +102,32 @@ function refreshPlan(now = new Date()) {
   const active = windows.some((minute) => clock.minutes >= minute - 2 && clock.minutes <= minute + 50);
   const refreshSeconds = active ? 300 : 1800;
 
-  const nextMinute = windows.find((minute) => minute - 2 > clock.minutes);
-  const next = new Date(now);
-  if (nextMinute !== undefined) {
-    const hours = Math.floor(nextMinute / 60);
-    const minutes = nextMinute % 60;
-    next.setTime(Date.UTC(clock.year, clock.month, clock.date, hours + 4, minutes - 2));
-  } else {
+  let nextRefreshMs: number | undefined;
+  for (const draw of windows) {
+    const windowOpen = draw - 2;
+    const followUp = draw + 15;
+    if (clock.minutes < windowOpen) {
+      nextRefreshMs = utcFromAst(clock.year, clock.month, clock.date, windowOpen);
+      break;
+    }
+    if (clock.minutes < followUp) {
+      nextRefreshMs = utcFromAst(clock.year, clock.month, clock.date, followUp);
+      break;
+    }
+  }
+  if (nextRefreshMs === undefined) {
     const tomorrow = new Date(Date.UTC(clock.year, clock.month, clock.date + 1));
     const tomorrowClock = astClock(new Date(tomorrow.getTime() + AST_OFFSET_MS));
     const firstMinute = tomorrowClock.day === 0 ? sundayWindows[0] : regularWindows[0];
-    next.setTime(Date.UTC(
+    nextRefreshMs = utcFromAst(
       tomorrow.getUTCFullYear(),
       tomorrow.getUTCMonth(),
       tomorrow.getUTCDate(),
-      Math.floor(firstMinute / 60) + 4,
-      (firstMinute % 60) - 2,
-    ));
+      firstMinute - 2,
+    );
   }
 
-  return { refreshSeconds, nextRefreshAt: next.toISOString() };
+  return { refreshSeconds, nextRefreshAt: new Date(nextRefreshMs).toISOString() };
 }
 
 function dateKeyInAst(value: string | Date) {
@@ -477,13 +491,24 @@ async function buildLotteryFeed() {
   } satisfies LotteryFeed;
 }
 
+const readCachedLotteryFeed = unstable_cache(
+  async () => buildLotteryFeed(),
+  ["pio-lottery-feed"],
+  { tags: [LOTTERY_CACHE_TAG], revalidate: 1800 },
+);
+
+export function invalidateLotteryMemoryCache() {
+  lotteryGlobal.__pioLotteryCache = undefined;
+  lotteryGlobal.__pioLotteryPending = undefined;
+}
+
 export async function getLotteryFeed(): Promise<LotteryFeed> {
   const now = Date.now();
   if (lotteryGlobal.__pioLotteryCache && lotteryGlobal.__pioLotteryCache.expiresAt > now) {
     return lotteryGlobal.__pioLotteryCache.feed;
   }
   if (lotteryGlobal.__pioLotteryPending) return lotteryGlobal.__pioLotteryPending;
-  lotteryGlobal.__pioLotteryPending = buildLotteryFeed().then((feed) => {
+  lotteryGlobal.__pioLotteryPending = readCachedLotteryFeed().then((feed) => {
     lotteryGlobal.__pioLotteryCache = { feed, expiresAt: Date.now() + feed.refreshSeconds * 1000 };
     return feed;
   }).finally(() => {

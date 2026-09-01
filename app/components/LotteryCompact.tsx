@@ -1,23 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import { lotteryBrand, lotteryMonogram } from "../../lib/lottery-brand";
 import type { LotteryFeed } from "../../lib/lottery-provider";
 import { formatLotteryDate, selectHomeQuinielas } from "../../lib/lottery-view";
 import { LotteryBalls, QuinielaPrizes } from "./LotteryMarks";
+import { useLotteryFeed } from "./useLotteryFeed";
 
 export function LotteryCompact({ feed }: { feed: LotteryFeed }) {
-  const [currentFeed, setCurrentFeed] = useState(feed);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    fetch("/api/lotteries", { signal: controller.signal })
-      .then((response) => response.ok ? response.json() as Promise<LotteryFeed> : undefined)
-      .then((latest) => { if (latest) setCurrentFeed(latest); })
-      .catch(() => undefined);
-    return () => controller.abort();
-  }, []);
+  const currentFeed = useLotteryFeed(feed);
 
   const cards = selectHomeQuinielas(currentFeed.results);
   if (!cards.some((card) => card.result)) return null;

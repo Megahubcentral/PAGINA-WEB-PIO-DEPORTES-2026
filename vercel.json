@@ -2,5 +2,14 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
   "installCommand": "pnpm install --frozen-lockfile",
-  "buildCommand": "pnpm build"
+  "buildCommand": "pnpm build",
+  "crons": [
+    { "path": "/api/lotteries/revalidate", "schedule": "0 17 * * *" },
+    { "path": "/api/lotteries/revalidate", "schedule": "35 18 * * *" },
+    { "path": "/api/lotteries/revalidate", "schedule": "0 20 * * 0" },
+    { "path": "/api/lotteries/revalidate", "schedule": "5 22 * * 0" },
+    { "path": "/api/lotteries/revalidate", "schedule": "0 0 * * *" },
+    { "path": "/api/lotteries/revalidate", "schedule": "0 1 * * 1-6" },
+    { "path": "/api/lotteries/revalidate", "schedule": "15 1 * * 1-6" }
+  ]
 }

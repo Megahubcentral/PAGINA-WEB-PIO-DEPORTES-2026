@@ -12,6 +12,7 @@ import {
   shiftDateKey,
 } from "../../lib/lottery-view";
 import { LotteryDrawNumbers, QuinielaPrizes } from "./LotteryMarks";
+import { useLotteryFeed } from "./useLotteryFeed";
 
 type BoardView = "hoy" | "ayer" | "historial";
 
@@ -45,7 +46,7 @@ function ResultCard({ result }: { result: LotteryResult }) {
 }
 
 export function LotteryHub({ feed, today }: { feed: LotteryFeed; today: string }) {
-  const [currentFeed, setCurrentFeed] = useState(feed);
+  const currentFeed = useLotteryFeed(feed);
   const yesterday = shiftDateKey(today, -1);
   const operators = useMemo(() => operatorsInFeed(currentFeed.results), [currentFeed.results]);
   const [view, setView] = useState<BoardView>("hoy");
@@ -55,33 +56,8 @@ export function LotteryHub({ feed, today }: { feed: LotteryFeed; today: string }
   const [visible, setVisible] = useState(18);
 
   useEffect(() => {
-    setCurrentFeed(feed);
-  }, [feed]);
-
-  useEffect(() => {
     const loteria = new URLSearchParams(window.location.search).get("loteria");
     if (loteria) setOperator(loteria);
-  }, []);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    let timer: number | undefined;
-    const refresh = () => {
-      fetch("/api/lotteries", { signal: controller.signal, cache: "no-store" })
-        .then((response) => (response.ok ? response.json() as Promise<LotteryFeed> : undefined))
-        .then((latest) => {
-          if (!latest) return;
-          setCurrentFeed(latest);
-          window.clearInterval(timer);
-          timer = window.setInterval(refresh, latest.refreshSeconds * 1000);
-        })
-        .catch(() => undefined);
-    };
-    refresh();
-    return () => {
-      controller.abort();
-      window.clearInterval(timer);
-    };
   }, []);
 
   const boardDate = view === "ayer" ? yesterday : today;

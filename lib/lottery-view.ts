@@ -193,3 +193,16 @@ export function matchesLotteryQuery(result: LotteryResult, query: string) {
   if (!needle) return true;
   return `${result.operator} ${result.game} ${result.numbers.join(" ")}`.toLocaleLowerCase("es").includes(needle);
 }
+
+const LOTTERY_REFRESH_BUFFER_MS = 90_000;
+const MIN_LOTTERY_REFRESH_DELAY_MS = 60_000;
+const MAX_LOTTERY_REFRESH_DELAY_MS = 12 * 60 * 60 * 1000;
+
+export function delayUntilLotteryRefresh(nextRefreshAt: string, now = Date.now()) {
+  const target = Date.parse(nextRefreshAt);
+  if (!Number.isFinite(target)) return 5 * 60 * 1000;
+  return Math.min(
+    MAX_LOTTERY_REFRESH_DELAY_MS,
+    Math.max(MIN_LOTTERY_REFRESH_DELAY_MS, target - now + LOTTERY_REFRESH_BUFFER_MS),
+  );
+}

@@ -132,19 +132,25 @@ test("free sports providers are server-side, cached and deployment ready", async
 });
 
 test("lottery and horse-racing results use scheduled server-side sources and include the required disclaimer", async () => {
-  const [provider, horseProvider, route, horseRoute, page, home, hub, compact, horseHub, brands, navigation, styles] = await Promise.all([
+  const [provider, horseProvider, route, revalidateRoute, horseRoute, page, home, hub, compact, lotteryFeedHook, view, horseHub, brands, navigation, styles, vercel, environment, deployment] = await Promise.all([
     readFile(new URL("lib/lottery-provider.ts", root), "utf8"),
     readFile(new URL("lib/horse-racing-provider.ts", root), "utf8"),
     readFile(new URL("app/api/lotteries/route.ts", root), "utf8"),
+    readFile(new URL("app/api/lotteries/revalidate/route.ts", root), "utf8"),
     readFile(new URL("app/api/horse-racing/route.ts", root), "utf8"),
     readFile(new URL("app/loterias/page.tsx", root), "utf8"),
     readFile(new URL("app/page.tsx", root), "utf8"),
     readFile(new URL("app/components/LotteryHub.tsx", root), "utf8"),
     readFile(new URL("app/components/LotteryCompact.tsx", root), "utf8"),
+    readFile(new URL("app/components/useLotteryFeed.ts", root), "utf8"),
+    readFile(new URL("lib/lottery-view.ts", root), "utf8"),
     readFile(new URL("app/components/HorseRacingHub.tsx", root), "utf8"),
     readFile(new URL("lib/lottery-brand.ts", root), "utf8"),
     readFile(new URL("app/components/MainNav.tsx", root), "utf8"),
     readFile(new URL("app/globals.css", root), "utf8"),
+    readFile(new URL("vercel.json", root), "utf8"),
+    readFile(new URL(".env.example", root), "utf8"),
+    readFile(new URL("DEPLOYMENT.md", root), "utf8"),
   ]);
 
   assert.match(provider, /ov\.gruporeal\.com\.do\/api\/lr/);
@@ -159,8 +165,41 @@ test("lottery and horse-racing results use scheduled server-side sources and inc
   assert.match(provider, /refreshPlan/);
   assert.match(provider, /__pioLotteryCache/);
   assert.match(provider, /cache: "no-store"/);
-  assert.match(hub, /\/api\/lotteries/);
+  assert.match(provider, /unstable_cache/);
+  assert.match(provider, /LOTTERY_CACHE_TAG = "lotteries"/);
+  assert.match(provider, /invalidateLotteryMemoryCache/);
+  assert.match(provider, /followUp = draw \+ 15/);
+  assert.match(hub, /useLotteryFeed/);
+  assert.match(compact, /useLotteryFeed/);
+  assert.match(lotteryFeedHook, /\/api\/lotteries/);
+  assert.match(lotteryFeedHook, /delayUntilLotteryRefresh/);
+  assert.match(lotteryFeedHook, /setTimeout/);
+  assert.match(lotteryFeedHook, /nextRefreshAt/);
+  assert.doesNotMatch(lotteryFeedHook, /cache: "no-store"/);
+  assert.doesNotMatch(lotteryFeedHook, /setInterval/);
+  assert.doesNotMatch(hub, /setInterval/);
+  assert.doesNotMatch(hub, /cache: "no-store"/);
+  assert.match(view, /delayUntilLotteryRefresh/);
+  assert.match(view, /90_000/);
+  assert.match(view, /60_000/);
   assert.match(route, /s-maxage/);
+  assert.match(revalidateRoute, /CRON_SECRET/);
+  assert.match(revalidateRoute, /Bearer \$\{secret\}/);
+  assert.match(revalidateRoute, /revalidateTag\(LOTTERY_CACHE_TAG/);
+  assert.match(revalidateRoute, /invalidateLotteryMemoryCache/);
+  assert.match(vercel, /\/api\/lotteries\/revalidate/);
+  assert.match(vercel, /"0 17 \* \* \*"/);
+  assert.match(vercel, /"35 18 \* \* \*"/);
+  assert.match(vercel, /"0 20 \* \* 0"/);
+  assert.match(vercel, /"5 22 \* \* 0"/);
+  assert.match(vercel, /"0 0 \* \* \*"/);
+  assert.match(vercel, /"0 1 \* \* 1-6"/);
+  assert.match(vercel, /"15 1 \* \* 1-6"/);
+  assert.match(environment, /^CRON_SECRET=$/m);
+  assert.match(deployment, /CRON_SECRET/);
+  assert.match(deployment, /nextRefreshAt/);
+  assert.match(home, /export const revalidate = 120/);
+  assert.doesNotMatch(home, /force-dynamic/);
   assert.match(horseProvider, /hvc\.com\.do\/wp-json\/wp\/v2\/posts/);
   assert.match(horseProvider, /hipodromo-camarero\.com\/api\/races/);
   assert.match(horseProvider, /refreshPlan/);
