@@ -132,7 +132,7 @@ test("free sports providers are server-side, cached and deployment ready", async
 });
 
 test("lottery and horse-racing results use scheduled server-side sources and include the required disclaimer", async () => {
-  const [provider, horseProvider, route, horseRoute, page, home, hub, horseHub, brands, navigation, styles] = await Promise.all([
+  const [provider, horseProvider, route, horseRoute, page, home, hub, compact, horseHub, brands, navigation, styles] = await Promise.all([
     readFile(new URL("lib/lottery-provider.ts", root), "utf8"),
     readFile(new URL("lib/horse-racing-provider.ts", root), "utf8"),
     readFile(new URL("app/api/lotteries/route.ts", root), "utf8"),
@@ -140,6 +140,7 @@ test("lottery and horse-racing results use scheduled server-side sources and inc
     readFile(new URL("app/loterias/page.tsx", root), "utf8"),
     readFile(new URL("app/page.tsx", root), "utf8"),
     readFile(new URL("app/components/LotteryHub.tsx", root), "utf8"),
+    readFile(new URL("app/components/LotteryCompact.tsx", root), "utf8"),
     readFile(new URL("app/components/HorseRacingHub.tsx", root), "utf8"),
     readFile(new URL("lib/lottery-brand.ts", root), "utf8"),
     readFile(new URL("app/components/MainNav.tsx", root), "utf8"),
@@ -149,8 +150,16 @@ test("lottery and horse-racing results use scheduled server-side sources and inc
   assert.match(provider, /ov\.gruporeal\.com\.do\/api\/lr/);
   assert.match(provider, /loteka\.com\.do/);
   assert.match(provider, /enloteria\.com\/resultados-leidsa/);
+  assert.match(provider, /enloteria\.com\/resultados-loto-pool/);
+  assert.match(provider, /enloteria\.com\/resultados-gana-mas/);
+  assert.match(provider, /juega-mas-pega-mas/);
+  assert.match(provider, /Juega \+ Pega\+/);
+  assert.match(compact, /lottery-home-extras/);
+  assert.match(provider, /La Primera/);
   assert.match(provider, /refreshPlan/);
-  assert.match(provider, /memoryCache/);
+  assert.match(provider, /__pioLotteryCache/);
+  assert.match(provider, /cache: "no-store"/);
+  assert.match(hub, /\/api\/lotteries/);
   assert.match(route, /s-maxage/);
   assert.match(horseProvider, /hvc\.com\.do\/wp-json\/wp\/v2\/posts/);
   assert.match(horseProvider, /hipodromo-camarero\.com\/api\/races/);
@@ -161,13 +170,19 @@ test("lottery and horse-racing results use scheduled server-side sources and inc
   assert.match(page, /HorseRacingHub/);
   assert.match(page, /Juega responsablemente/);
   assert.match(home, /LotteryCompact/);
+  assert.match(compact, /Quinielas de hoy/);
   assert.match(hub, /lottery-brand-mark/);
+  assert.match(hub, /lottery-board/);
+  assert.match(hub, /1er/);
   assert.match(horseHub, /Resultados de carreras/);
   assert.match(horseHub, /Comprobar jornada oficial/);
   assert.match(brands, /lotteryMonogram/);
   assert.match(navigation, /\["Loterías", "\/loterias"\]/);
   assert.match(styles, /\.lottery-results-grid/);
+  assert.match(styles, /\.lottery-board/);
+  assert.match(styles, /\.lottery-quiniela/);
   assert.match(styles, /\.lottery-brand--leidsa/);
+  assert.match(styles, /\.lottery-brand--primera/);
   assert.match(styles, /\.horse-meetings-grid/);
 });
 

@@ -4,10 +4,11 @@ import { LotteryHub } from "../components/LotteryHub";
 import { SiteFooter, SiteHeader } from "../components/Portal";
 import { getHorseRacingFeed } from "../../lib/horse-racing-provider";
 import { getLotteryFeed } from "../../lib/lottery-provider";
+import { todayKeyInAst } from "../../lib/lottery-view";
 
 export const metadata: Metadata = {
-  title: "Loterías e hípica: resultados y horarios",
-  description: "Consulta resultados recientes de loterías dominicanas y carreras del Hipódromo V Centenario y el Hipódromo Camarero.",
+  title: "Loterías e hípica: resultados de hoy",
+  description: "Quinielas de hoy en República Dominicana: 1er, 2do y 3er premio de Loto Real, Nacional, Loteka y LEIDSA, más loto, pool, kino y resultados hípicos.",
 };
 
 export const dynamic = "force-dynamic";
@@ -17,6 +18,7 @@ export default async function LotteriesPage() {
     getLotteryFeed(),
     getHorseRacingFeed(),
   ]);
+  const today = todayKeyInAst();
   return (
     <>
       <SiteHeader />
@@ -24,18 +26,20 @@ export default async function LotteriesPage() {
         <section className="lottery-hero">
           <div className="shell lottery-hero-inner">
             <div>
-              <span className="eyebrow light">Sorteos · hípica · fuentes</span>
+              <span className="eyebrow light">Quiniela · loto · hípica</span>
               <h1>Loterías</h1>
-              <p>Los principales sorteos dominicanos y las jornadas hípicas de República Dominicana y Puerto Rico, organizados para comprobar su origen.</p>
+              <p>El tablero de hoy, con 1er, 2do y 3er premio de cada casa, más loto, pool y kino. Debajo, las jornadas hípicas de República Dominicana y Puerto Rico.</p>
             </div>
-            <div className="lottery-hero-balls" aria-hidden="true">
-              <span>24</span><span>09</span><span>57</span><span>31</span>
+            <div className="lottery-hero-prizes" aria-hidden="true">
+              <span><small>1er</small><b>16</b></span>
+              <span><small>2do</small><b>24</b></span>
+              <span><small>3er</small><b>64</b></span>
             </div>
           </div>
         </section>
 
         <div className="shell lottery-content">
-          <LotteryHub feed={feed} />
+          <LotteryHub feed={feed} today={today} />
           <HorseRacingHub feed={horseRacingFeed} />
 
           <aside className="lottery-disclaimer" aria-label="Aviso importante sobre los resultados">

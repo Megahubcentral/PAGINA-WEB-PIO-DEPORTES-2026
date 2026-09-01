@@ -1,4 +1,4 @@
-export type LotteryBrand = "loto-real" | "leidsa" | "loteka" | "nacional" | "general";
+export type LotteryBrand = "loto-real" | "leidsa" | "loteka" | "nacional" | "primera" | "general";
 
 export function lotteryBrand(operator: string): LotteryBrand {
   const normalized = operator
@@ -8,6 +8,7 @@ export function lotteryBrand(operator: string): LotteryBrand {
 
   if (normalized.includes("loteka")) return "loteka";
   if (normalized.includes("leidsa")) return "leidsa";
+  if (normalized.includes("primera")) return "primera";
   if (normalized.includes("real")) return "loto-real";
   if (normalized.includes("nacional")) return "nacional";
   return "general";
@@ -19,5 +20,6 @@ export function lotteryMonogram(operator: string) {
   if (brand === "leidsa") return "LE";
   if (brand === "loteka") return "LK";
   if (brand === "nacional") return "LN";
+  if (brand === "primera") return "LP";
   return operator.split(/\s+/).slice(0, 2).map((word) => word[0]).join("").toUpperCase();
 }

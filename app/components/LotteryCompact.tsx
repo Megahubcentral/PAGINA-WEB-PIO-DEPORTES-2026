@@ -3,16 +3,9 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { lotteryBrand, lotteryMonogram } from "../../lib/lottery-brand";
-import type { LotteryFeed, LotteryResult } from "../../lib/lottery-provider";
-
-function compactResults(results: LotteryResult[]) {
-  const seen = new Set<string>();
-  return results.filter((result) => {
-    if (seen.has(result.operator)) return false;
-    seen.add(result.operator);
-    return true;
-  }).slice(0, 4);
-}
+import type { LotteryFeed } from "../../lib/lottery-provider";
+import { formatLotteryDate, selectHomeQuinielas } from "../../lib/lottery-view";
+import { LotteryBalls, QuinielaPrizes } from "./LotteryMarks";
 
 export function LotteryCompact({ feed }: { feed: LotteryFeed }) {
   const [currentFeed, setCurrentFeed] = useState(feed);
@@ -26,32 +19,61 @@ export function LotteryCompact({ feed }: { feed: LotteryFeed }) {
     return () => controller.abort();
   }, []);
 
-  const results = compactResults(currentFeed.results);
-  if (!results.length) return null;
+  const cards = selectHomeQuinielas(currentFeed.results);
+  if (!cards.some((card) => card.result)) return null;
+
   return (
     <section className="lottery-home-section">
       <div className="shell">
         <div className="lottery-home-heading">
-          <div><span>Resultados al momento</span><h2>Loterías</h2></div>
-          <Link href="/loterias">Ver todos los resultados <b>→</b></Link>
+          <div>
+            <span>Quinielas de hoy</span>
+            <h2>Loterías</h2>
+          </div>
+          <Link href="/loterias">Ver tablero completo <b>→</b></Link>
         </div>
         <div className="lottery-home-grid">
-          {results.map((result) => (
-            <Link className={`lottery-home-card lottery-brand--${lotteryBrand(result.operator)}`} href={`/loterias?loteria=${encodeURIComponent(result.operator)}`} key={result.id}>
-              <div className="lottery-home-brand">
-                <span className="lottery-brand-mark" aria-hidden="true">{lotteryMonogram(result.operator)}</span>
-                <div><span>{result.operator}</span><small>{result.game}</small></div>
-              </div>
-              <div className="lottery-home-balls">
-                {result.numbers.slice(0, 6).map((number, index) => <strong key={`${number}-${index}`}>{number}</strong>)}
-              </div>
-              <time dateTime={result.date}>{result.date.split("-").reverse().join("/")} · {result.drawTime}</time>
-            </Link>
-          ))}
+          {cards.map((card) => {
+            const result = card.result;
+            const brand = lotteryBrand(card.operator);
+            return (
+              <Link
+                className={`lottery-home-card lottery-brand--${brand}${card.isToday ? " is-today" : ""}`}
+                href="/loterias"
+                key={card.operator}
+              >
+                <div className="lottery-home-brand">
+                  <span className="lottery-brand-mark" aria-hidden="true">{lotteryMonogram(card.operator)}</span>
+                  <div>
+                    <span>{card.operator}</span>
+                    <small>{result?.game ?? "Quiniela"}</small>
+                  </div>
+                </div>
+                {result ? (
+                  <QuinielaPrizes numbers={result.numbers} dimmed={!card.isToday} />
+                ) : (
+                  <QuinielaPrizes numbers={["—", "—", "—"]} dimmed />
+                )}
+                {card.extras.length ? (
+                  <ul className="lottery-home-extras">
+                    {card.extras.map((extra) => (
+                      <li key={extra.id}>
+                        <span>{extra.game}</span>
+                        <LotteryBalls result={extra} compact />
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+                <time dateTime={result?.date}>
+                  {card.isToday ? `Hoy · ${result?.drawTime ?? card.fallbackTime}` : result ? `Último · ${formatLotteryDate(result.date)}` : "Aún no sale"}
+                </time>
+              </Link>
+            );
+          })}
         </div>
         <div className="lottery-home-note">
           <span>Información para consulta</span>
-          <p>Confirma siempre tu jugada y cualquier premio en el canal oficial de la lotería correspondiente.</p>
+          <p>La quiniela se lee como 1er, 2do y 3er premio. Confirma siempre tu jugada en el canal oficial de cada lotería.</p>
         </div>
       </div>
     </section>
