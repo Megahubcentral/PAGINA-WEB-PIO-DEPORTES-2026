@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { ADSENSE_CLIENT } from "../../lib/adsense";
+import { ADSENSE_CLIENT, ADSENSE_SLOT_LABELS } from "../../lib/adsense";
 
 export type BreakingHeadline = {
   title: string;
@@ -488,10 +488,18 @@ export function AdSlot({
   size = "970 × 90",
   slot,
   creative,
+  format = "auto",
+  layout,
+  layoutKey,
+  fullWidthResponsive = true,
 }: {
   size?: string;
   slot?: string;
   creative?: DirectAdCreative;
+  format?: "auto" | "fluid";
+  layout?: "in-article";
+  layoutKey?: string;
+  fullWidthResponsive?: boolean;
 }) {
   const client = ADSENSE_CLIENT;
   const configuredSlot =
@@ -500,6 +508,9 @@ export function AdSlot({
       ? process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_RECTANGLE_SLOT
       : process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_TOP_SLOT);
   const insRef = useRef<HTMLModElement>(null);
+  const isInArticle = layout === "in-article";
+  const isInFeed = Boolean(layoutKey);
+  const useFullWidth = fullWidthResponsive && !isInArticle && !isInFeed;
 
   useEffect(() => {
     if (creative || !client || !configuredSlot) return;
@@ -511,7 +522,7 @@ export function AdSlot({
     } catch {
       // Ad blockers should never affect the rest of the portal.
     }
-  }, [client, configuredSlot, creative]);
+  }, [client, configuredSlot, creative, format, layout, layoutKey]);
 
   if (creative) {
     return (
@@ -553,15 +564,28 @@ export function AdSlot({
   }
 
   if (client && configuredSlot) {
+    // Localhost rarely fills AdSense; show labeled placeholders so layout is reviewable.
+    if (process.env.NODE_ENV === "development") {
+      const label = ADSENSE_SLOT_LABELS[configuredSlot] ?? `AdSense · ${configuredSlot}`;
+      return (
+        <div className="ad-slot ad-slot-preview" aria-label={`Vista previa: ${label}`}>
+          <span>{label}</span>
+          <small>Slot {configuredSlot} · solo local</small>
+        </div>
+      );
+    }
+
     return (
       <ins
         ref={insRef}
         className="adsbygoogle"
-        style={{ display: "block" }}
+        style={isInArticle ? { display: "block", textAlign: "center" } : { display: "block" }}
         data-ad-client={client}
         data-ad-slot={configuredSlot}
-        data-ad-format="auto"
-        data-full-width-responsive="true"
+        data-ad-format={format}
+        {...(layout ? { "data-ad-layout": layout } : {})}
+        {...(layoutKey ? { "data-ad-layout-key": layoutKey } : {})}
+        {...(useFullWidth ? { "data-full-width-responsive": "true" } : {})}
       />
     );
   }

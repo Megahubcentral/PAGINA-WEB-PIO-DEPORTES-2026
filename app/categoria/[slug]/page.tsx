@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { AdSlot } from "../../components/LiveWidgets";
 import { SiteFooter, SiteHeader } from "../../components/Portal";
+import { ADSENSE_SLOTS } from "../../../lib/adsense";
 import { getCategoryArticles, getInternationalArticlePage, wordpressCategorySlugs } from "../../../lib/wordpress";
 
 const profiles: Record<string, { title: string; label: string; description: string; code: string }> = {
@@ -194,13 +195,17 @@ export default async function CategoryPage({
               {pagination ? <CategoryPagination page={pagination.page} totalPages={pagination.totalPages} /> : null}
             </div>
             <aside className="category-sidebar">
-              <AdSlot size="300 × 250" />
+              <div className="sidebar-desktop-ad">
+                <AdSlot slot={ADSENSE_SLOTS.sidebarDesktop} />
+              </div>
               <div className="category-score-promo">
                 <span>En vivo · Resultados · Calendario</span>
                 <strong>Sigue la jornada sin salir de Pío</strong>
                 <Link href="/marcadores">Ir a Marcadores →</Link>
               </div>
-              <AdSlot size="300 × 600" />
+              <div className="sidebar-desktop-ad">
+                <AdSlot slot={ADSENSE_SLOTS.sidebarDesktop} />
+              </div>
             </aside>
           </div>
         </section>

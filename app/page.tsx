@@ -145,7 +145,7 @@ export default async function Home() {
         </section>
 
         <div className="shell wide-ad">
-          <AdSlot slot={ADSENSE_SLOTS.belowPortada} />
+          <AdSlot slot={ADSENSE_SLOTS.entreSeccionesHome} />
         </div>
 
         <section className="media-section" id="multimedia">
@@ -162,10 +162,16 @@ export default async function Home() {
           <div className="shell">
             <SectionHeading kicker="Actualidad nacional" title="Deporte dominicano" href="/categoria/nacionales" />
             <div className="national-grid">
-              {nationalStories.map((article) => <ArticleCard key={article.id} article={article} />)}
+              {nationalStories.map((article) => (
+                <ArticleCard key={article.id} article={article} />
+              ))}
             </div>
           </div>
         </section>
+
+        <div className="shell wide-ad">
+          <AdSlot slot={ADSENSE_SLOTS.entreSeccionesHome} />
+        </div>
 
         <InstagramFeed feed={instagramFeed} />
 
@@ -221,13 +227,19 @@ export default async function Home() {
           </div>
         </section>
 
+        <div className="shell wide-ad">
+          <AdSlot slot={ADSENSE_SLOTS.entreSeccionesHome} />
+        </div>
+
         <LotteryCompact feed={lotteryFeed} />
 
         <section className="more-sports-section">
           <div className="shell">
             <SectionHeading kicker="Polideportivo" title="Más disciplinas" href="/categoria/otros-deportes" />
             <div className="more-sports-grid">
-              {moreSportsStories.map((article) => <ArticleCard key={article.id} article={article} />)}
+              {moreSportsStories.map((article) => (
+                <ArticleCard key={article.id} article={article} />
+              ))}
             </div>
           </div>
         </section>

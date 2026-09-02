@@ -1,8 +1,10 @@
 /* eslint-disable @next/next/no-img-element -- The WordPress newsroom controls the featured-image CDN. */
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ArticleBody } from "../../components/ArticleBody";
 import { AdSlot } from "../../components/LiveWidgets";
 import { ArticleCard, SiteFooter, SiteHeader } from "../../components/Portal";
+import { ADSENSE_SLOTS } from "../../../lib/adsense";
 import { fallbackArticles, getArticleBySlug } from "../../../lib/wordpress";
 import { getSiteUrl } from "../../../lib/site";
 
@@ -43,20 +45,15 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
                 {article.imageLicense ? <> · {article.imageLicenseUrl ? <a href={article.imageLicenseUrl} target="_blank" rel="noreferrer">{article.imageLicense}</a> : article.imageLicense}</> : null}
               </p>
             ) : null}
-            {article.content ? (
-              <div className="article-content wp-content" dangerouslySetInnerHTML={{ __html: article.content }} />
-            ) : (
-              <div className="article-content">
-                <p className="dropcap">La jornada deportiva volvió a confirmar que los grandes momentos se construyen con preparación, carácter y una ejecución precisa. La noticia mantiene atentos a los fanáticos dentro y fuera de República Dominicana.</p>
-                <p>El desarrollo de la competencia dejó claves importantes para lo que viene. Los protagonistas destacaron el trabajo colectivo y la capacidad de responder en los instantes decisivos, mientras el cuerpo técnico ya mira hacia el próximo compromiso.</p>
-                <AdSlot size="Contenido patrocinado · Responsive" />
-                <p>En Pío Deportes seguimos cada detalle con contexto, datos y la mirada de quienes viven el deporte. Esta plantilla recibe automáticamente desde WordPress el texto completo, galerías, videos insertados, audios, etiquetas y créditos editoriales.</p>
-                <p>La cobertura continuará con reacciones, estadísticas y el calendario actualizado de los próximos encuentros.</p>
-              </div>
-            )}
+            <ArticleBody html={article.content} />
+            <div className="wide-ad article-end-ad">
+              <AdSlot slot={ADSENSE_SLOTS.finalDeArticulo} />
+            </div>
           </article>
           <aside className="article-sidebar">
-            <AdSlot size="300 × 250" />
+            <div className="sidebar-desktop-ad">
+              <AdSlot slot={ADSENSE_SLOTS.sidebarDesktop} />
+            </div>
             <div className="share-block">
               <strong>Comparte esta noticia</strong>
               <div className="share-links">
