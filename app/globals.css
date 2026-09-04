@@ -1001,6 +1001,10 @@ button, input, select, textarea { font: inherit; }
   .horse-race-row:nth-child(odd), .horse-race-row:nth-child(even) { padding: 10px 0; border-right: 0; }
 }
 
+@media (max-width: 992px) {
+  .masthead-ad .ad-slot-direct img { max-height: 60px; }
+}
+
 @media (max-width: 760px) {
   .shell { width: min(100% - 28px, 1240px); }
   .radio-flyover-inner { grid-template-columns: 1fr 130px auto; gap: 12px; }

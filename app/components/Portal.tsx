@@ -5,11 +5,23 @@ import { PushNotificationButton } from "./Engagement";
 import { AdSlot, BreakingTicker, CurrentDate, LiveInfo, NewsletterForm, type DirectAdCreative } from "./LiveWidgets";
 import { MainNav } from "./MainNav";
 
+function aesHeaderBanner(file: string, width: number, height: number) {
+  return {
+    src: `/ads/aes-dominicana/${encodeURIComponent(file)}`,
+    width,
+    height,
+  };
+}
+
 const aesDominicanaHeaderAd: DirectAdCreative = {
   href: "https://www.aesdominicana.com/es",
   alt: "AES Dominicana",
-  desktop: { src: "/ads/aes-dominicana/Banner-Fijo_730x90-px.jpeg", width: 730, height: 90 },
-  mobile: { src: "/ads/aes-dominicana/300x50-LIGHT.gif", width: 300, height: 50 },
+  desktop: aesHeaderBanner("BANNER 728X90.webp", 728, 90),
+  sources: [
+    { media: "(max-width: 430px)", asset: aesHeaderBanner("BANNER MOVIL 300X50.webp", 300, 50) },
+    { media: "(max-width: 760px)", asset: aesHeaderBanner("BANNER MOVIL 320X50.webp", 320, 50) },
+    { media: "(max-width: 992px)", asset: aesHeaderBanner("BANNER 468X60.webp", 468, 60) },
+  ],
 };
 
 export async function SiteHeader() {
@@ -38,7 +50,7 @@ export async function SiteHeader() {
           <Link className="brand" href="/" aria-label="Pío Deportes, portada">
             <img src="/pio-logo-original.png" alt="Pío Deportes" width="210" height="105" />
           </Link>
-          <div className="masthead-ad"><AdSlot size="730 × 90" creative={aesDominicanaHeaderAd} /></div>
+          <div className="masthead-ad"><AdSlot size="728 × 90" creative={aesDominicanaHeaderAd} /></div>
           <form className="search" action="/buscar" role="search">
             <label className="sr-only" htmlFor="site-search">Buscar noticias</label>
             <input id="site-search" name="q" type="search" placeholder="Buscar" />

@@ -476,12 +476,19 @@ export type DirectAdAsset = {
   height: number;
 };
 
+export type DirectAdSource = {
+  media: string;
+  asset: DirectAdAsset;
+};
+
 export type DirectAdCreative = {
   href: string;
   alt: string;
   desktop: DirectAdAsset;
   mobile?: DirectAdAsset;
   wide?: DirectAdAsset;
+  /** Extra <source> entries, first matching media wins. Overrides mobile/wide when set. */
+  sources?: DirectAdSource[];
 };
 
 export function AdSlot({
@@ -534,22 +541,25 @@ export function AdSlot({
         aria-label={`Publicidad: ${creative.alt}`}
       >
         <picture>
-          {creative.mobile ? (
+          {(creative.sources?.length
+            ? creative.sources
+            : [
+                ...(creative.mobile
+                  ? [{ media: "(max-width: 760px)", asset: creative.mobile }]
+                  : []),
+                ...(creative.wide
+                  ? [{ media: "(min-width: 1100px)", asset: creative.wide }]
+                  : []),
+              ]
+          ).map((source) => (
             <source
-              media="(max-width: 760px)"
-              srcSet={creative.mobile.src}
-              width={creative.mobile.width}
-              height={creative.mobile.height}
+              key={source.media}
+              media={source.media}
+              srcSet={source.asset.src}
+              width={source.asset.width}
+              height={source.asset.height}
             />
-          ) : null}
-          {creative.wide ? (
-            <source
-              media="(min-width: 1100px)"
-              srcSet={creative.wide.src}
-              width={creative.wide.width}
-              height={creative.wide.height}
-            />
-          ) : null}
+          ))}
           {/* Animated GIF creatives must not go through the image optimizer. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
