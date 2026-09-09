@@ -3,12 +3,13 @@ import Link from "next/link";
 import { AudioPlayer, AdSlot } from "./components/LiveWidgets";
 import { RotatingHomeSidebarAd } from "./components/DirectAds";
 import { ADSENSE_SLOTS } from "../lib/adsense";
+import { aesDominicanaWideAd } from "../lib/direct-ads";
 import { ArticleCard, SectionHeading, SiteFooter, SiteHeader } from "./components/Portal";
 import { ScoreStrip } from "./components/Scoreboard";
 import { VideoCarousel } from "./components/VideoCarousel";
 import { LotteryCompact } from "./components/LotteryCompact";
 import { InstagramFeed } from "./components/InstagramFeed";
-import { getArticlesByTag, getBasketballArticles, getCategoryArticles, getInternationalArticles, getVideoItems, homeNewsQuery, type Article } from "../lib/wordpress";
+import { getArticlesByTag, getCategoryArticles, getVideoItems, homeNewsQuery, type Article } from "../lib/wordpress";
 import { getLotteryFeed } from "../lib/lottery-provider";
 import { getInstagramFeed } from "../lib/instagram-provider";
 
@@ -32,17 +33,56 @@ function interleaveArticlePools(...pools: Article[][]) {
     .filter((article): article is Article => Boolean(article));
 }
 
+function HomeFeatureBlock({
+  kicker,
+  title,
+  href,
+  articles,
+  reverse = false,
+  contrast = false,
+}: {
+  kicker: string;
+  title: string;
+  href: string;
+  articles: Article[];
+  reverse?: boolean;
+  contrast?: boolean;
+}) {
+  const lead = articles[0];
+  const stack = articles.slice(1, 5);
+  if (!lead) return null;
+
+  return (
+    <section className={contrast ? "home-sport-section is-contrast" : "home-sport-section"}>
+      <div className="shell">
+        <SectionHeading kicker={kicker} title={title} href={href} />
+        <div className={reverse ? "feature-pair reverse" : "feature-pair"}>
+          <ArticleCard article={lead} />
+          <div className="headline-stack">
+            {stack.map((article) => (
+              <ArticleCard key={article.id} article={article} compact />
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default async function Home() {
+  const nbaQuery = { ...homeNewsQuery, exactCategory: true };
   const [
     portadaArticles,
     destacadosArticles,
     videos,
     nationalArticles,
-    internationalArticles,
+    mlbArticles,
     nbaArticles,
-    nflArticles,
-    tennisArticles,
     lidomArticles,
+    footballArticles,
+    nflArticles,
+    hockeyArticles,
+    tennisArticles,
     caribbeanArticles,
     otherArticles,
     lotteryFeed,
@@ -52,11 +92,13 @@ export default async function Home() {
     getArticlesByTag("destacados", 8, homeNewsQuery),
     getVideoItems(6),
     getCategoryArticles("nacionales", homeNewsQuery),
-    getInternationalArticles(5, homeNewsQuery),
-    getBasketballArticles(5, homeNewsQuery),
-    getCategoryArticles("nfl", homeNewsQuery),
-    getCategoryArticles("tennis", homeNewsQuery),
+    getCategoryArticles("mlb", homeNewsQuery),
+    getCategoryArticles("nba", nbaQuery),
     getCategoryArticles("lidom", homeNewsQuery),
+    getCategoryArticles("futbol", homeNewsQuery),
+    getCategoryArticles("nfl", homeNewsQuery),
+    getCategoryArticles("nhl", homeNewsQuery),
+    getCategoryArticles("tennis", homeNewsQuery),
     getCategoryArticles("beisbol-del-caribe", homeNewsQuery),
     getCategoryArticles("otros-deportes", homeNewsQuery),
     getLotteryFeed(),
@@ -70,14 +112,13 @@ export default async function Home() {
   const moreStories = topStories.slice(3, 5);
   const latest = takeUnique(destacadosArticles, 4, usedArticles);
   const nationalStories = takeUnique(nationalArticles, 4, usedArticles);
-  const coverageLead = internationalArticles[0];
-  const coverageStack = internationalArticles.slice(1, 5);
-  takeUnique(internationalArticles, 5, usedArticles);
-  const nbaLead = nbaArticles[0];
-  const nbaStories = nbaArticles.slice(1, 5);
-  takeUnique(nbaArticles, 5, usedArticles);
+  const mlbStories = takeUnique(mlbArticles, 5, usedArticles);
+  const nbaStories = takeUnique(nbaArticles, 5, usedArticles);
+  const lidomStories = takeUnique(lidomArticles, 5, usedArticles);
+  const footballStories = takeUnique(footballArticles, 5, usedArticles);
+  const nflStories = takeUnique(nflArticles, 5, usedArticles);
   const moreSportsStories = takeUnique(
-    interleaveArticlePools(otherArticles, tennisArticles, nflArticles, caribbeanArticles, lidomArticles),
+    interleaveArticlePools(hockeyArticles, tennisArticles, caribbeanArticles, otherArticles),
     4,
     usedArticles,
   );
@@ -160,30 +201,27 @@ export default async function Home() {
 
         <section className="national-section">
           <div className="shell">
-            <SectionHeading kicker="Actualidad nacional" title="Deporte dominicano" href="/categoria/nacionales" />
+            <SectionHeading kicker="Actualidad nacional" title="Nacionales" href="/categoria/nacionales" />
             <div className="national-grid">
               {nationalStories.map((article) => (
                 <ArticleCard key={article.id} article={article} />
               ))}
             </div>
+            <div className="national-ad">
+              <AdSlot size="970 × 90" creative={aesDominicanaWideAd} />
+            </div>
           </div>
         </section>
 
-        <div className="shell wide-ad">
-          <AdSlot slot={ADSENSE_SLOTS.entreSeccionesHome} />
-        </div>
-
-        <InstagramFeed feed={instagramFeed} />
-
-        <section className="coverage-section">
+        <section className="home-sport-section">
           <div className="shell">
-            <SectionHeading kicker="Competiciones" title="Cobertura internacional" href="/categoria/internacional" />
+            <SectionHeading kicker="Grandes Ligas" title="MLB" href="/categoria/mlb" />
             <div className="lead-grid coverage-layout">
               <div className="coverage-main">
                 <div className="feature-pair coverage-feature">
-                  {coverageLead ? <ArticleCard article={coverageLead} /> : null}
+                  {mlbStories[0] ? <ArticleCard article={mlbStories[0]} /> : null}
                   <div className="headline-stack">
-                    {coverageStack.map((article) => (
+                    {mlbStories.slice(1).map((article) => (
                       <ArticleCard key={article.id} article={article} compact />
                     ))}
                   </div>
@@ -195,34 +233,52 @@ export default async function Home() {
                 </div>
               </aside>
             </div>
-
-            <div className="agenda-card agenda-horizontal">
-              <div className="agenda-intro">
-                <span className="eyebrow">Agenda</span>
-                <h3>Próximos eventos</h3>
-              </div>
-              <div className="agenda-date"><strong>13</strong><span>AGO<br />HOY</span></div>
-              <Link className="agenda-item" href="/marcadores#nyy-bos"><time>7:10 PM</time><div><strong>Yankees vs. Red Sox</strong><small>MLB · ESPN</small></div><span>→</span></Link>
-              <Link className="agenda-item" href="/marcadores#reinas-pur"><time>8:00 PM</time><div><strong>Reinas del Caribe</strong><small>Voleibol · Pio TV</small></div><span>→</span></Link>
-              <Link className="agenda-item" href="/marcadores#lal-mia"><time>9:30 PM</time><div><strong>Lakers vs. Heat</strong><small>NBA · League Pass</small></div><span>→</span></Link>
-              <Link className="agenda-cta" href="/marcadores">Ver agenda completa <span>→</span></Link>
-            </div>
           </div>
         </section>
 
-        <section className="nba-home-section">
+        <HomeFeatureBlock
+          kicker="Baloncesto profesional"
+          title="NBA"
+          href="/categoria/nba"
+          articles={nbaStories}
+          reverse
+          contrast
+        />
+
+        <HomeFeatureBlock
+          kicker="Béisbol invernal"
+          title="LIDOM"
+          href="/categoria/lidom"
+          articles={lidomStories}
+        />
+
+        <div className="shell wide-ad">
+          <AdSlot slot={ADSENSE_SLOTS.entreSeccionesHome} />
+        </div>
+
+        <HomeFeatureBlock
+          kicker="Juego internacional"
+          title="Fútbol"
+          href="/categoria/futbol"
+          articles={footballStories}
+          reverse
+          contrast
+        />
+
+        <HomeFeatureBlock
+          kicker="Fútbol americano"
+          title="NFL"
+          href="/categoria/nfl"
+          articles={nflStories}
+        />
+
+        <section className="more-sports-section">
           <div className="shell">
-            <div className="subsection-title">
-              <strong className="subsection-heading">NBA & baloncesto</strong>
-              <Link href="/categoria/nba">Más NBA y baloncesto →</Link>
-            </div>
-            <div className="feature-pair reverse">
-              {nbaLead ? <ArticleCard article={nbaLead} /> : null}
-              <div className="headline-stack">
-                {nbaStories.map((article) => (
-                  <ArticleCard key={article.id} article={article} compact />
-                ))}
-              </div>
+            <SectionHeading kicker="Hockey · Tenis · Caribe · Otros" title="Más deportes" href="/categoria/otros-deportes" />
+            <div className="more-sports-grid">
+              {moreSportsStories.map((article) => (
+                <ArticleCard key={article.id} article={article} />
+              ))}
             </div>
           </div>
         </section>
@@ -231,18 +287,8 @@ export default async function Home() {
           <AdSlot slot={ADSENSE_SLOTS.entreSeccionesHome} />
         </div>
 
+        <InstagramFeed feed={instagramFeed} />
         <LotteryCompact feed={lotteryFeed} />
-
-        <section className="more-sports-section">
-          <div className="shell">
-            <SectionHeading kicker="Polideportivo" title="Más disciplinas" href="/categoria/otros-deportes" />
-            <div className="more-sports-grid">
-              {moreSportsStories.map((article) => (
-                <ArticleCard key={article.id} article={article} />
-              ))}
-            </div>
-          </div>
-        </section>
       </main>
       <SiteFooter />
     </>

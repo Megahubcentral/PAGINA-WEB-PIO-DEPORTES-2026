@@ -1,40 +1,10 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { AdSlot, type DirectAdCreative } from "./LiveWidgets";
+import { arsFuturoSidebarAd, dominosSidebarAd } from "../../lib/direct-ads";
+import { AdSlot } from "./LiveWidgets";
 
 const ROTATION_MS = 5 * 60 * 1000;
-
-export const arsFuturoSidebarAd: DirectAdCreative = {
-  href: "https://www.arsfuturo.com/",
-  alt: "ARS Futuro",
-  desktop: {
-    src: "/ads/ars-futuro/BANNER%20ARS%20FUTURO%20(300X600).png",
-    width: 300,
-    height: 600,
-  },
-  mobile: {
-    src: "/ads/ars-futuro/BANNER%20ARS%20FUTURO%20(300X250).png",
-    width: 300,
-    height: 250,
-  },
-};
-
-export const dominosSidebarAd: DirectAdCreative = {
-  href: "https://www.dominos.com.do/",
-  alt: "Domino's",
-  desktop: {
-    src: "/ads/dominos/BANNER%20DOMINOS%20VERTICAL.png",
-    width: 300,
-    height: 600,
-  },
-  mobile: {
-    src: "/ads/dominos/BANNER%20DOMINOS%20CUADRADO.png",
-    width: 300,
-    height: 250,
-  },
-};
-
 const HOME_SIDEBAR_ADS = [arsFuturoSidebarAd, dominosSidebarAd];
 
 function subscribeToAdRotation(onStoreChange: () => void) {

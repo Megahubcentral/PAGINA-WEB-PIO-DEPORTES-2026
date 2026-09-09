@@ -1,4 +1,4 @@
-import { revalidateTag } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
 import { getLotteryFeed, invalidateLotteryMemoryCache, LOTTERY_CACHE_TAG } from "../../../../lib/lottery-provider";
 
@@ -18,6 +18,8 @@ export async function GET(request: Request) {
 
   invalidateLotteryMemoryCache();
   revalidateTag(LOTTERY_CACHE_TAG, { expire: 0 });
+  revalidatePath("/");
+  revalidatePath("/loterias");
   const feed = await getLotteryFeed();
   return NextResponse.json({
     ok: true,

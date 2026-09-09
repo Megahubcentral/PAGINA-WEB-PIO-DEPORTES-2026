@@ -206,3 +206,31 @@ export function delayUntilLotteryRefresh(nextRefreshAt: string, now = Date.now()
     Math.max(MIN_LOTTERY_REFRESH_DELAY_MS, target - now + LOTTERY_REFRESH_BUFFER_MS),
   );
 }
+
+function astMinutesNow(now = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Santo_Domingo",
+    hour: "numeric",
+    minute: "numeric",
+    hourCycle: "h23",
+  }).formatToParts(now);
+  const hour = Number(parts.find((part) => part.type === "hour")?.value);
+  const minute = Number(parts.find((part) => part.type === "minute")?.value);
+  return hour * 60 + minute;
+}
+
+export const STALE_LOTTERY_RETRY_MS = 120_000;
+
+export function lotteryFeedNeedsRetry(results: LotteryResult[], now = new Date(), maxMinutesAfterDraw = Number.POSITIVE_INFINITY) {
+  const today = todayKeyInAst(now);
+  const minutes = astMinutesNow(now);
+  return HOME_HOUSES.some((house) => {
+    const draw = drawMinutes(house.fallbackTime);
+    if (minutes < draw + 3) return false;
+    if (minutes - draw > maxMinutesAfterDraw) return false;
+    const ofToday = results.filter((result) => result.operator === house.operator && result.date === today);
+    if (!ofToday.some((result) => result.numbers.length === 3)) return true;
+    if (house.operator !== "Lotería Nacional") return false;
+    return !ofToday.some((result) => foldedGame(result.game).includes("juega"));
+  });
+}

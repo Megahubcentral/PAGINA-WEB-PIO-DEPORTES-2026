@@ -6,6 +6,7 @@
   "crons": [
     { "path": "/api/lotteries/revalidate", "schedule": "0 17 * * *" },
     { "path": "/api/lotteries/revalidate", "schedule": "35 18 * * *" },
+    { "path": "/api/lotteries/revalidate", "schedule": "50 18 * * *" },
     { "path": "/api/lotteries/revalidate", "schedule": "0 20 * * 0" },
     { "path": "/api/lotteries/revalidate", "schedule": "5 22 * * 0" },
     { "path": "/api/lotteries/revalidate", "schedule": "0 0 * * *" },

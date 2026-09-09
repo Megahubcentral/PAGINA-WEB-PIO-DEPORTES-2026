@@ -114,6 +114,10 @@ function refreshPlan(now = new Date()) {
       nextRefreshMs = utcFromAst(clock.year, clock.month, clock.date, followUp);
       break;
     }
+    if (clock.minutes <= draw + 50) {
+      nextRefreshMs = now.getTime() + 5 * 60 * 1000;
+      break;
+    }
   }
   if (nextRefreshMs === undefined) {
     const tomorrow = new Date(Date.UTC(clock.year, clock.month, clock.date + 1));
@@ -494,7 +498,7 @@ async function buildLotteryFeed() {
 const readCachedLotteryFeed = unstable_cache(
   async () => buildLotteryFeed(),
   ["pio-lottery-feed"],
-  { tags: [LOTTERY_CACHE_TAG], revalidate: 1800 },
+  { tags: [LOTTERY_CACHE_TAG], revalidate: 300 },
 );
 
 export function invalidateLotteryMemoryCache() {
@@ -509,7 +513,7 @@ export async function getLotteryFeed(): Promise<LotteryFeed> {
   }
   if (lotteryGlobal.__pioLotteryPending) return lotteryGlobal.__pioLotteryPending;
   lotteryGlobal.__pioLotteryPending = readCachedLotteryFeed().then((feed) => {
-    lotteryGlobal.__pioLotteryCache = { feed, expiresAt: Date.now() + feed.refreshSeconds * 1000 };
+    lotteryGlobal.__pioLotteryCache = { feed, expiresAt: Date.now() + Math.min(feed.refreshSeconds, 300) * 1000 };
     return feed;
   }).finally(() => {
     lotteryGlobal.__pioLotteryPending = undefined;

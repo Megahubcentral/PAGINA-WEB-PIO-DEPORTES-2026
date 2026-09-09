@@ -309,6 +309,19 @@ const localCategoryProfiles: Record<string, { category: string; image: string; t
       "Cinco historias para seguir antes del inicio de la temporada",
     ],
   },
+  nhl: {
+    category: "NHL",
+    image: "/news/nba.jpg",
+    titles: [
+      "El Este de la NHL entra en una recta de máxima rivalidad",
+      "Las potencias del hockey ajustan sus líneas rumbo a los playoffs",
+      "Los porteros marcan diferencias en una noche de alta tensión",
+      "El talento joven acelera el relevo en las franquicias aspirantes",
+      "Canadá y Estados Unidos calientan otra batalla continental",
+      "Los campeones defienden la corona con una plantilla reforzada",
+      "Calendario, rivalidades y claves de la próxima semana en la NHL",
+    ],
+  },
   tennis: {
     category: "Tenis",
     image: "/news/tennis.jpg",
@@ -453,6 +466,7 @@ export const localCategoryArticles: Article[] = Object.entries(localCategoryProf
         category: profile.category,
         categorySlug,
         categorySlugs: [categorySlug],
+        tags: [categorySlug],
         image: editorialImage?.url ?? profile.image,
         imageCredit: editorialImage?.credit,
         imageSourceUrl: editorialImage?.sourceUrl,
@@ -484,6 +498,7 @@ export const wordpressCategorySlugs = [
   "lidom",
   "futbol",
   "nfl",
+  "nhl",
   "tennis",
   "beisbol-del-caribe",
   "otros-deportes",
@@ -492,6 +507,7 @@ export const wordpressCategorySlugs = [
 const categorySlugAliases: Record<string, string> = {
   tenis: "tennis",
   baloncesto: "nba",
+  hockey: "nhl",
 };
 
 function resolveCategorySlug(slug: string) {
@@ -745,6 +761,7 @@ type WpTermRecord = { id: number; slug?: string; name?: string };
 
 export type ArticleQueryOptions = {
   excludeTags?: string[];
+  exactCategory?: boolean;
 };
 
 export const homeNewsQuery: ArticleQueryOptions = { excludeTags: ["portada"] };
@@ -856,6 +873,117 @@ export async function getArticleBySlug(slug: string): Promise<Article | undefine
   return localArticleArchive.find((article) => article.slug === slug) ?? fallbackArticles[0];
 }
 
+function articleTagSet(article: Article) {
+  return new Set((article.tags ?? []).map((tag) => tag.trim().toLowerCase()).filter(Boolean));
+}
+
+function articleSlugKey(article: Pick<Article, "slug">) {
+  return article.slug.trim().toLowerCase();
+}
+
+function isSameArticle(left: Pick<Article, "id" | "slug">, right: Pick<Article, "id" | "slug">) {
+  return left.id === right.id || articleSlugKey(left) === articleSlugKey(right);
+}
+
+function primaryCategorySlug(article: Article) {
+  return resolveCategorySlug(article.categorySlug).toLowerCase();
+}
+
+export function sharesRelatedCategory(source: Article, candidate: Article) {
+  const sourceSlug = primaryCategorySlug(source);
+  const candidateSlug = primaryCategorySlug(candidate);
+  if (nationalCategorySlugs.has(sourceSlug) || nationalCategorySlugs.has(candidateSlug)) {
+    return nationalCategorySlugs.has(sourceSlug) && nationalCategorySlugs.has(candidateSlug);
+  }
+  if (isBasketballCategory(sourceSlug, source.category)) {
+    return isBasketballCategory(candidateSlug, candidate.category);
+  }
+  return sourceSlug === candidateSlug;
+}
+
+export function relatednessScore(source: Article, candidate: Article) {
+  if (isSameArticle(source, candidate)) return 0;
+  const sameCategory = sharesRelatedCategory(source, candidate);
+  const sharedTags = [...articleTagSet(candidate)].filter((tag) => articleTagSet(source).has(tag)).length;
+  if (sameCategory && sharedTags) return 200 + sharedTags;
+  if (sameCategory) return 100;
+  if (sharedTags) return sharedTags;
+  return 0;
+}
+
+function rankRelatedArticles(source: Article, pool: Article[], limit: number) {
+  const seen = new Set([articleSlugKey(source)]);
+  return pool
+    .filter((candidate) => {
+      const slug = articleSlugKey(candidate);
+      if (seen.has(slug) || isSameArticle(source, candidate)) return false;
+      seen.add(slug);
+      return true;
+    })
+    .map((candidate) => ({ candidate, score: relatednessScore(source, candidate) }))
+    .filter(({ score }) => score > 0)
+    .sort((left, right) => {
+      if (right.score !== left.score) return right.score - left.score;
+      const rightTime = Date.parse(right.candidate.date ?? "");
+      const leftTime = Date.parse(left.candidate.date ?? "");
+      if (Number.isNaN(rightTime) && Number.isNaN(leftTime)) return 0;
+      if (Number.isNaN(rightTime)) return 1;
+      if (Number.isNaN(leftTime)) return -1;
+      return rightTime - leftTime;
+    })
+    .map(({ candidate }) => candidate)
+    .slice(0, limit);
+}
+
+function localRelatedArticles(article: Article, limit: number) {
+  return rankRelatedArticles(article, localArticleArchive, limit);
+}
+
+async function relatedCategoryIds(article: Article) {
+  const slug = primaryCategorySlug(article);
+  if (nationalCategorySlugs.has(slug)) {
+    const terms = await wpFetch("/categories?slug=nacionales,nacional") as WpTermRecord[] | null;
+    return (terms ?? []).map((term) => term.id).filter(Boolean);
+  }
+  if (isBasketballCategory(slug, article.category)) {
+    return getBasketballCategoryIds();
+  }
+  const terms = await wpFetch(`/categories?slug=${encodeURIComponent(slug)}`) as WpTermRecord[] | null;
+  return (terms ?? []).map((term) => term.id).filter(Boolean);
+}
+
+export async function getRelatedArticles(article: Article, limit = 4): Promise<Article[]> {
+  const cap = Math.max(1, Math.min(12, limit));
+  const localRelated = localRelatedArticles(article, cap);
+  const tagSlugs = [...articleTagSet(article)];
+
+  try {
+    const [tagIds, categoryIds] = await Promise.all([
+      tagSlugs.length ? getTagIdsBySlug(tagSlugs) : Promise.resolve([] as number[]),
+      relatedCategoryIds(article),
+    ]);
+    const excludeQuery = article.id ? `&exclude=${article.id}` : "";
+    const pools = await Promise.all([
+      categoryIds.length
+        ? (wpFetch(
+            `/posts?categories=${categoryIds.join(",")}${excludeQuery}&per_page=${Math.max(12, cap + 8)}&orderby=date&order=desc&${embedQuery}`,
+          ) as Promise<WpPost[] | null>)
+        : Promise.resolve([] as WpPost[] | null),
+      tagIds.length
+        ? (wpFetch(
+            `/posts?tags=${tagIds.join(",")}${excludeQuery}&per_page=${cap + 4}&orderby=date&order=desc&${embedQuery}`,
+          ) as Promise<WpPost[] | null>)
+        : Promise.resolve([] as WpPost[] | null),
+    ]);
+    const fromWordpress = pools.flatMap((posts) => (posts ?? []).map(normalizePost));
+    const related = rankRelatedArticles(article, fromWordpress, cap);
+    if (related.length >= cap) return related;
+    return mergeUniqueArticles(related, localRelated, cap);
+  } catch {
+    return localRelated;
+  }
+}
+
 const embedQuery = "_embed=wp:featuredmedia,wp:term,author";
 export const internationalPageSize = 12;
 
@@ -943,7 +1071,7 @@ export async function getCategoryArticles(slug: string, options?: ArticleQueryOp
   if (resolvedSlug === "internacional") {
     return getInternationalArticles(articlesPerCategory, options);
   }
-  if (resolvedSlug === "nba") {
+  if (resolvedSlug === "nba" && !options?.exactCategory) {
     return getBasketballArticles(articlesPerCategory, options);
   }
 

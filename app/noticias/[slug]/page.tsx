@@ -3,9 +3,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArticleBody } from "../../components/ArticleBody";
 import { AdSlot } from "../../components/LiveWidgets";
-import { ArticleCard, SiteFooter, SiteHeader } from "../../components/Portal";
+import { ArticleCard, SectionHeading, SiteFooter, SiteHeader } from "../../components/Portal";
 import { ADSENSE_SLOTS } from "../../../lib/adsense";
-import { fallbackArticles, getArticleBySlug } from "../../../lib/wordpress";
+import { getArticleBySlug, getRelatedArticles } from "../../../lib/wordpress";
 import { getSiteUrl } from "../../../lib/site";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -22,9 +22,11 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
   const { slug } = await params;
   const article = await getArticleBySlug(slug);
   if (!article) return null;
+  const related = await getRelatedArticles(article, 4);
   const publicUrl = `${getSiteUrl()}/noticias/${article.slug}`;
   const shareUrl = encodeURIComponent(publicUrl);
   const shareTitle = encodeURIComponent(article.title);
+  const sidebarRelated = related.slice(0, 3);
 
   return (
     <>
@@ -63,12 +65,22 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
                 <a href={`mailto:?subject=${shareTitle}&body=${shareUrl}`} aria-label="Compartir por correo">↗</a>
               </div>
             </div>
-            <div>
-              <span className="eyebrow">También en Pío</span>
-              {fallbackArticles.slice(1, 4).map((item) => <ArticleCard compact article={item} key={item.id} />)}
-            </div>
+            {sidebarRelated.length ? (
+              <div className="related-sidebar">
+                <span className="eyebrow">Más de {article.category}</span>
+                {sidebarRelated.map((item) => <ArticleCard compact article={item} key={`side-${item.id}-${item.slug}`} />)}
+              </div>
+            ) : null}
           </aside>
         </div>
+        {related.length ? (
+          <section className="related-articles" aria-label="Noticias relacionadas">
+            <SectionHeading kicker="Sigue leyendo" title="Noticias relacionadas" href={`/categoria/${article.categorySlug}`} />
+            <div className="related-articles-grid">
+              {related.map((item) => <ArticleCard article={item} key={`${item.id}-${item.slug}`} />)}
+            </div>
+          </section>
+        ) : null}
       </main>
       <SiteFooter />
     </>

@@ -11,6 +11,7 @@ const primaryNav = [
 ] as const;
 
 const moreSports = [
+  ["Hockey", "/categoria/nhl"],
   ["NFL", "/categoria/nfl"],
   ["Tenis", "/categoria/tennis"],
   ["Caribe", "/categoria/beisbol-del-caribe"],

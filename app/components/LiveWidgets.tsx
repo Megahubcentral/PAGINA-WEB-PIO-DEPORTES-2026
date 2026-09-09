@@ -4,6 +4,7 @@ import Link from "next/link";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { ADSENSE_CLIENT, ADSENSE_SLOT_LABELS } from "../../lib/adsense";
+import type { DirectAdCreative } from "../../lib/direct-ads";
 
 export type BreakingHeadline = {
   title: string;
@@ -469,27 +470,6 @@ export function NewsletterForm() {
     </div>
   );
 }
-
-export type DirectAdAsset = {
-  src: string;
-  width: number;
-  height: number;
-};
-
-export type DirectAdSource = {
-  media: string;
-  asset: DirectAdAsset;
-};
-
-export type DirectAdCreative = {
-  href: string;
-  alt: string;
-  desktop: DirectAdAsset;
-  mobile?: DirectAdAsset;
-  wide?: DirectAdAsset;
-  /** Extra <source> entries, first matching media wins. Overrides mobile/wide when set. */
-  sources?: DirectAdSource[];
-};
 
 export function AdSlot({
   size = "970 × 90",

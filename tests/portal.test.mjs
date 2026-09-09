@@ -5,7 +5,7 @@ import test from "node:test";
 const root = new URL("../", import.meta.url);
 
 test("the portal includes its core editorial surfaces", async () => {
-  const [page, layout, portal, widgets, wordpress, styles, category] = await Promise.all([
+  const [page, layout, portal, widgets, wordpress, styles, category, article] = await Promise.all([
     readFile(new URL("app/page.tsx", root), "utf8"),
     readFile(new URL("app/layout.tsx", root), "utf8"),
     readFile(new URL("app/components/Portal.tsx", root), "utf8"),
@@ -13,15 +13,22 @@ test("the portal includes its core editorial surfaces", async () => {
     readFile(new URL("lib/wordpress.ts", root), "utf8"),
     readFile(new URL("app/globals.css", root), "utf8"),
     readFile(new URL("app/categoria/[slug]/page.tsx", root), "utf8"),
+    readFile(new URL("app/noticias/[slug]/page.tsx", root), "utf8"),
   ]);
 
-  assert.match(page, /Deporte dominicano/);
-  assert.match(page, /Cobertura internacional/);
-  assert.match(page, /\/categoria\/internacional/);
-  assert.match(page, /getInternationalArticles\(5, homeNewsQuery\)/);
-  assert.match(page, /internationalArticles\.slice\(1, 5\)/);
-  assert.match(page, /getBasketballArticles\(5, homeNewsQuery\)/);
-  assert.match(page, /nbaArticles\.slice\(1, 5\)/);
+  assert.match(page, /aesDominicanaWideAd/);
+  assert.match(page, /className="national-ad"/);
+  assert.match(page, /title="Nacionales"/);
+  assert.match(portal, /cometaHeaderAd/);
+  assert.match(page, /getCategoryArticles\("mlb", homeNewsQuery\)/);
+  assert.match(page, /getCategoryArticles\("nba", nbaQuery\)/);
+  assert.match(page, /getCategoryArticles\("lidom", homeNewsQuery\)/);
+  assert.match(page, /getCategoryArticles\("futbol", homeNewsQuery\)/);
+  assert.match(page, /getCategoryArticles\("nfl", homeNewsQuery\)/);
+  assert.match(page, /getCategoryArticles\("nhl", homeNewsQuery\)/);
+  assert.match(page, /interleaveArticlePools\(hockeyArticles, tennisArticles, caribbeanArticles, otherArticles\)/);
+  assert.doesNotMatch(page, /Cobertura internacional/);
+  assert.doesNotMatch(page, /getInternationalArticles\(5, homeNewsQuery\)/);
   assert.match(page, /homeNewsQuery/);
   assert.match(page, /getArticlesByTag\("destacados", 8, homeNewsQuery\)/);
   assert.match(page, /getArticlesByTag\("portada", 5\)/);
@@ -30,9 +37,10 @@ test("the portal includes its core editorial surfaces", async () => {
   assert.match(category, /getCategoryArticles\(slug\)/);
   assert.match(category, /getInternationalArticlePage/);
   assert.doesNotMatch(category, /homeNewsQuery/);
-  assert.match(page, /Más disciplinas/);
+  assert.match(page, /Más deportes/);
   assert.match(page, /more-sports-grid/);
   assert.doesNotMatch(page, /Panorama internacional/);
+  assert.doesNotMatch(page, /Más disciplinas/);
   assert.match(page, /VideoCarousel/);
   assert.match(page, /ScoreStrip/);
   assert.match(page, /AdSlot/);
@@ -57,6 +65,15 @@ test("the portal includes its core editorial surfaces", async () => {
   assert.match(wordpress, /decodeHtmlEntities/);
   assert.match(wordpress, /decodeWordpressHtml/);
   assert.match(wordpress, /curatedLeadImages/);
+  assert.match(wordpress, /getRelatedArticles/);
+  assert.match(wordpress, /relatednessScore/);
+  assert.match(wordpress, /sharesRelatedCategory/);
+  assert.match(wordpress, /200 \+ sharedTags/);
+  assert.match(wordpress, /if \(sameCategory\) return 100/);
+  assert.match(article, /getRelatedArticles\(article, 4\)/);
+  assert.match(article, /Noticias relacionadas/);
+  assert.match(article, /related-articles-grid/);
+  assert.match(styles, /\.related-articles-grid/);
   assert.match(category, /internacional: \{ title: "Cobertura internacional"/);
   assert.match(category, /nba: \{ title: "NBA & baloncesto"/);
   assert.match(category, /ncaab: \{ title: "NCAAB"/);
@@ -169,27 +186,35 @@ test("lottery and horse-racing results use scheduled server-side sources and inc
   assert.match(provider, /LOTTERY_CACHE_TAG = "lotteries"/);
   assert.match(provider, /invalidateLotteryMemoryCache/);
   assert.match(provider, /followUp = draw \+ 15/);
+  assert.match(provider, /now\.getTime\(\) \+ 5 \* 60 \* 1000/);
+  assert.match(provider, /revalidate: 300/);
   assert.match(hub, /useLotteryFeed/);
   assert.match(compact, /useLotteryFeed/);
   assert.match(lotteryFeedHook, /\/api\/lotteries/);
   assert.match(lotteryFeedHook, /delayUntilLotteryRefresh/);
+  assert.match(lotteryFeedHook, /lotteryFeedNeedsRetry/);
   assert.match(lotteryFeedHook, /setTimeout/);
   assert.match(lotteryFeedHook, /nextRefreshAt/);
+  assert.match(lotteryFeedHook, /\/api\/lotteries\?ts=/);
   assert.doesNotMatch(lotteryFeedHook, /cache: "no-store"/);
   assert.doesNotMatch(lotteryFeedHook, /setInterval/);
   assert.doesNotMatch(hub, /setInterval/);
   assert.doesNotMatch(hub, /cache: "no-store"/);
   assert.match(view, /delayUntilLotteryRefresh/);
+  assert.match(view, /lotteryFeedNeedsRetry/);
   assert.match(view, /90_000/);
   assert.match(view, /60_000/);
   assert.match(route, /s-maxage/);
+  assert.match(route, /stale-while-revalidate=60/);
   assert.match(revalidateRoute, /CRON_SECRET/);
   assert.match(revalidateRoute, /Bearer \$\{secret\}/);
   assert.match(revalidateRoute, /revalidateTag\(LOTTERY_CACHE_TAG/);
-  assert.match(revalidateRoute, /invalidateLotteryMemoryCache/);
+  assert.match(revalidateRoute, /revalidatePath\("\/"\)/);
+  assert.match(revalidateRoute, /revalidatePath\("\/loterias"\)/);
   assert.match(vercel, /\/api\/lotteries\/revalidate/);
   assert.match(vercel, /"0 17 \* \* \*"/);
   assert.match(vercel, /"35 18 \* \* \*"/);
+  assert.match(vercel, /"50 18 \* \* \*"/);
   assert.match(vercel, /"0 20 \* \* 0"/);
   assert.match(vercel, /"5 22 \* \* 0"/);
   assert.match(vercel, /"0 0 \* \* \*"/);
@@ -237,7 +262,7 @@ test("the homepage Instagram feed is server-side, cached and automatically refre
   ]);
 
   assert.match(home, /<InstagramFeed feed=\{instagramFeed\} \/>/);
-  assert.ok(home.indexOf("<InstagramFeed") < home.indexOf("coverage-section"));
+  assert.ok(home.indexOf("more-sports-section") < home.indexOf("<InstagramFeed"));
   assert.match(component, /currentFeed\.posts\.slice\(0, 10\)/);
   assert.match(component, /setInterval\(refresh, clientRefreshInterval\)/);
   assert.match(provider, /graph\.instagram\.com/);
