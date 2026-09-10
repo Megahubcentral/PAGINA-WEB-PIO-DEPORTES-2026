@@ -1,35 +1,63 @@
 /* eslint-disable @next/next/no-img-element -- The WordPress newsroom controls the featured-image CDN. */
 import type { Metadata } from "next";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { ArticleBody } from "../../components/ArticleBody";
+import { JsonLd } from "../../components/JsonLd";
 import { AdSlot } from "../../components/LiveWidgets";
 import { ArticleCard, SectionHeading, SiteFooter, SiteHeader } from "../../components/Portal";
 import { ADSENSE_SLOTS } from "../../../lib/adsense";
+import { breadcrumbJsonLd, canonicalUrl, newsArticleJsonLd, routeMetadata } from "../../../lib/seo";
 import { getArticleBySlug, getRelatedArticles } from "../../../lib/wordpress";
-import { getSiteUrl } from "../../../lib/site";
+
+export const revalidate = 120;
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const article = await getArticleBySlug(slug);
-  return {
-    title: article?.title ?? "Noticia deportiva",
-    description: article?.excerpt,
-    openGraph: article ? { images: [article.image] } : undefined,
-  };
+  if (!article) {
+    return { title: "Noticia no encontrada", robots: { index: false, follow: false } };
+  }
+  return routeMetadata({
+    path: `/noticias/${article.slug}`,
+    title: article.title,
+    description: article.excerpt,
+    image: article.image,
+    imageAlt: article.imageAlt || article.title,
+    ogType: "article",
+    publishedTime: article.date,
+    modifiedTime: article.dateModified,
+    authors: article.author ? [article.author] : undefined,
+  });
 }
 
 export default async function ArticlePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const article = await getArticleBySlug(slug);
-  if (!article) return null;
+  if (!article) notFound();
   const related = await getRelatedArticles(article, 4);
-  const publicUrl = `${getSiteUrl()}/noticias/${article.slug}`;
+  const publicUrl = canonicalUrl(`/noticias/${article.slug}`);
   const shareUrl = encodeURIComponent(publicUrl);
   const shareTitle = encodeURIComponent(article.title);
   const sidebarRelated = related.slice(0, 3);
 
   return (
     <>
+      <JsonLd data={newsArticleJsonLd({
+        title: article.title,
+        description: article.excerpt,
+        image: article.image,
+        datePublished: article.date,
+        dateModified: article.dateModified,
+        author: article.author,
+        category: article.category,
+        path: `/noticias/${article.slug}`,
+      })} />
+      <JsonLd data={breadcrumbJsonLd([
+        { name: "Inicio", path: "/" },
+        { name: article.category, path: `/categoria/${article.categorySlug}` },
+        { name: article.title, path: `/noticias/${article.slug}` },
+      ])} />
       <SiteHeader />
       <main className="shell article-page">
         <div className="article-layout">
@@ -38,9 +66,13 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
               <Link className="category-link" href={`/categoria/${article.categorySlug}`}>{article.category}</Link>
               <h1>{article.title}</h1>
               <p className="article-deck">{article.excerpt}</p>
-              <div className="article-byline"><strong>Por {article.author}</strong><span>{article.publishedAt}</span><span>Santo Domingo, RD</span></div>
+              <div className="article-byline">
+                <strong>Por {article.author}</strong>
+                <time dateTime={article.date}>{article.publishedAt}</time>
+                <span>Santo Domingo, RD</span>
+              </div>
             </header>
-            <img className="article-hero-image" src={article.image} alt="" fetchPriority="high" />
+            <img className="article-hero-image" src={article.image} alt={article.imageAlt || article.title} fetchPriority="high" />
             {article.imageCredit ? (
               <p className="article-image-credit">
                 Foto: {article.imageSourceUrl ? <a href={article.imageSourceUrl} target="_blank" rel="noreferrer">{article.imageCredit}</a> : article.imageCredit}

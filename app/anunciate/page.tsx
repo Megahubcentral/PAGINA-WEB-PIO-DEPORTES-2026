@@ -1,11 +1,14 @@
+import type { Metadata } from "next";
 import { AdSlot } from "../components/LiveWidgets";
 import { SiteFooter, SiteHeader } from "../components/Portal";
+import { routeMetadata } from "../../lib/seo";
 import AdvertisingForm from "./AdvertisingForm";
 
-export const metadata = {
+export const metadata: Metadata = routeMetadata({
+  path: "/anunciate",
   title: "Anúnciate",
   description: "Soluciones publicitarias, patrocinios y contenido de marca para conectar con la audiencia deportiva de Pío Deportes.",
-};
+});
 
 export default function AdvertisePage() {
   return (

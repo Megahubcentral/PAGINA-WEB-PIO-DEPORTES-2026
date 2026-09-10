@@ -9,9 +9,11 @@ export type Article = {
   categorySlug: string;
   categorySlugs?: string[];
   image: string;
+  imageAlt?: string;
   author: string;
   publishedAt: string;
   date?: string;
+  dateModified?: string;
   content?: string;
   media?: "video" | "audio";
   imageCredit?: string;
@@ -29,9 +31,28 @@ export type VideoItem = {
   section: string;
   thumbnail: string;
   publishedAt: string;
+  date?: string;
+  dateModified?: string;
   duration: string;
   embedUrl?: string;
   sourceUrl?: string;
+};
+
+export type SitemapEntry = {
+  slug: string;
+  lastModified?: string;
+};
+
+export type SitemapContent = {
+  articles: SitemapEntry[];
+  videos: SitemapEntry[];
+  fromWordpress: boolean;
+};
+
+export type NewsSitemapEntry = {
+  slug: string;
+  title: string;
+  publishedAt: string;
 };
 
 const pioYoutubeChannel = "https://www.youtube.com/@piodeportes/featured";
@@ -519,6 +540,7 @@ type WpPost = {
   id: number;
   slug: string;
   date: string;
+  modified?: string;
   format?: string;
   title?: { rendered?: string };
   excerpt?: { rendered?: string };
@@ -526,6 +548,7 @@ type WpPost = {
   _embedded?: {
     "wp:featuredmedia"?: Array<{
       source_url?: string;
+      alt_text?: string;
       media_details?: { sizes?: { large?: { source_url?: string } } };
     }>;
     "wp:term"?: WpTerm[][];
@@ -645,10 +668,13 @@ function normalizePost(post: WpPost): Article {
   const author = post?._embedded?.author?.[0]?.name;
   const categorySlugs = articleCategorySlugs(terms);
 
+  const title = plainText(post.title?.rendered);
+  const imageAlt = plainText(media?.alt_text) || title;
+
   return {
     id: post.id,
     slug: post.slug,
-    title: plainText(post.title?.rendered),
+    title,
     excerpt: plainText(post.excerpt?.rendered),
     category: decodeHtmlEntities(category?.name ?? "Actualidad"),
     categorySlug: resolveCategorySlug(category?.slug ?? "actualidad"),
@@ -658,8 +684,10 @@ function normalizePost(post: WpPost): Article {
       media?.media_details?.sizes?.large?.source_url ??
       media?.source_url ??
       "/news/reinas.jpg",
+    imageAlt,
     author: decodeHtmlEntities(author ?? "Pío Deportes"),
     date: post.date,
+    dateModified: post.modified || post.date,
     publishedAt: new Intl.DateTimeFormat("es-DO", {
       day: "numeric",
       month: "short",
@@ -705,6 +733,8 @@ function normalizeVideoPost(post: WpPost): VideoItem {
     section: article.category,
     thumbnail: article.image,
     publishedAt: article.publishedAt,
+    date: article.date,
+    dateModified: article.dateModified,
     duration: "Video",
     embedUrl,
     sourceUrl: embedUrl ?? pioYoutubeChannel,
@@ -870,7 +900,7 @@ export async function getArticleBySlug(slug: string): Promise<Article | undefine
   } catch {
     // The local editorial preview remains available if WordPress is offline.
   }
-  return localArticleArchive.find((article) => article.slug === slug) ?? fallbackArticles[0];
+  return localArticleArchive.find((article) => article.slug === slug);
 }
 
 function articleTagSet(article: Article) {
@@ -1131,5 +1161,118 @@ export async function getVideoBySlug(slug: string): Promise<VideoItem | undefine
   } catch {
     // Use the editorial preview below.
   }
-  return fallbackVideos.find((video) => video.slug === slug) ?? fallbackVideos[0];
+  return fallbackVideos.find((video) => video.slug === slug);
+}
+
+const sitemapPostFields = "_fields=id,slug,date,modified,format,title";
+const newsWindowMs = 48 * 60 * 60 * 1000;
+const sitemapPageCap = 50;
+
+type WpSitemapPost = {
+  id?: number;
+  slug?: string;
+  date?: string;
+  modified?: string;
+  format?: string;
+  title?: { rendered?: string };
+};
+
+function isVideoPost(post: Pick<WpSitemapPost, "format">, videoSlugs: Set<string>, slug?: string) {
+  if (post.format === "video") return true;
+  return Boolean(slug && videoSlugs.has(slug));
+}
+
+function toSitemapEntry(post: WpSitemapPost): SitemapEntry | null {
+  if (!post.slug) return null;
+  return {
+    slug: post.slug,
+    lastModified: post.modified || post.date,
+  };
+}
+
+async function paginateWpPosts(query: string): Promise<WpSitemapPost[]> {
+  const first = await wpFetchResult<WpSitemapPost[]>(`/posts?${query}&per_page=100&page=1`);
+  if (!first || !Array.isArray(first.data)) return [];
+  const posts = [...first.data];
+  const totalPages = Math.min(Math.max(first.totalPages || 1, 1), sitemapPageCap);
+  const remaining = Array.from({ length: totalPages - 1 }, (_, index) => index + 2);
+  const batchSize = 5;
+  for (let index = 0; index < remaining.length; index += batchSize) {
+    const batch = remaining.slice(index, index + batchSize);
+    const results = await Promise.all(
+      batch.map((page) => wpFetchResult<WpSitemapPost[]>(`/posts?${query}&per_page=100&page=${page}`)),
+    );
+    for (const result of results) {
+      if (result && Array.isArray(result.data) && result.data.length) posts.push(...result.data);
+    }
+  }
+  return posts;
+}
+
+async function getWordpressVideoPosts() {
+  try {
+    const videoCategories = await wpFetch("/categories?slug=videos,video") as WpTermRecord[] | null;
+    const categoryPosts = videoCategories?.[0]?.id
+      ? await paginateWpPosts(`categories=${videoCategories[0].id}&${sitemapPostFields}`)
+      : [];
+    const formatPosts = await paginateWpPosts(`format=video&${sitemapPostFields}`);
+    const bySlug = new Map<string, WpSitemapPost>();
+    for (const post of [...categoryPosts, ...formatPosts]) {
+      if (post.slug && !bySlug.has(post.slug)) bySlug.set(post.slug, post);
+    }
+    return [...bySlug.values()];
+  } catch {
+    return [] as WpSitemapPost[];
+  }
+}
+
+function localSitemapContent(): SitemapContent {
+  return {
+    articles: [...fallbackArticles, ...localCategoryArticles].map((article) => ({ slug: article.slug })),
+    videos: fallbackVideos.map((video) => ({ slug: video.slug })),
+    fromWordpress: false,
+  };
+}
+
+export async function getSitemapContent(): Promise<SitemapContent> {
+  try {
+    const [posts, videoPosts] = await Promise.all([
+      paginateWpPosts(sitemapPostFields),
+      getWordpressVideoPosts(),
+    ]);
+    const videoSlugs = new Set(videoPosts.map((post) => post.slug).filter(Boolean) as string[]);
+    const articles = posts
+      .filter((post) => !isVideoPost(post, videoSlugs, post.slug))
+      .map(toSitemapEntry)
+      .filter((entry): entry is SitemapEntry => Boolean(entry));
+    const videos = videoPosts
+      .map(toSitemapEntry)
+      .filter((entry): entry is SitemapEntry => Boolean(entry));
+
+    if (!articles.length && !videos.length) return localSitemapContent();
+    return { articles, videos, fromWordpress: true };
+  } catch {
+    return localSitemapContent();
+  }
+}
+
+export async function getNewsSitemapEntries(): Promise<NewsSitemapEntry[]> {
+  try {
+    const after = new Date(Date.now() - newsWindowMs).toISOString();
+    const [posts, videoPosts] = await Promise.all([
+      paginateWpPosts(`after=${encodeURIComponent(after)}&orderby=date&order=desc&${sitemapPostFields}`),
+      getWordpressVideoPosts(),
+    ]);
+    const videoSlugs = new Set(videoPosts.map((post) => post.slug).filter(Boolean) as string[]);
+    return posts
+      .filter((post) => post.slug && post.date && !isVideoPost(post, videoSlugs, post.slug))
+      .slice(0, 1000)
+      .map((post) => ({
+        slug: post.slug as string,
+        title: plainText(post.title?.rendered) || post.slug as string,
+        publishedAt: post.date as string,
+      }));
+  } catch {
+    return [];
+  }
 }

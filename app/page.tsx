@@ -1,5 +1,7 @@
 /* eslint-disable @next/next/no-img-element -- Local editorial assets are pre-compressed and WordPress can return remote media. */
+import type { Metadata } from "next";
 import Link from "next/link";
+import { homeMetadata } from "../lib/seo";
 import { AudioPlayer, AdSlot } from "./components/LiveWidgets";
 import { RotatingHomeSidebarAd } from "./components/DirectAds";
 import { ADSENSE_SLOTS } from "../lib/adsense";
@@ -13,6 +15,7 @@ import { getArticlesByTag, getCategoryArticles, getVideoItems, homeNewsQuery, ty
 import { getLotteryFeed } from "../lib/lottery-provider";
 import { getInstagramFeed } from "../lib/instagram-provider";
 
+export const metadata: Metadata = homeMetadata();
 export const revalidate = 120;
 
 function takeUnique(pool: Article[], count: number, used: Set<string>) {

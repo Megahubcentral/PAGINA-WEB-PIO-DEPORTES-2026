@@ -1,17 +1,40 @@
 import type { MetadataRoute } from "next";
-import { getSiteUrl } from "../lib/site";
-import { fallbackArticles, fallbackVideos, localCategoryArticles, wordpressCategorySlugs } from "../lib/wordpress";
+import { canonicalUrl, toAbsoluteIsoDate } from "../lib/seo";
+import { getSitemapContent, wordpressCategorySlugs } from "../lib/wordpress";
 
-export default function sitemap(): MetadataRoute.Sitemap {
-  const base = getSiteUrl();
+export const revalidate = 120;
+
+function sitemapDate(value?: string) {
+  const iso = toAbsoluteIsoDate(value);
+  if (!iso) return undefined;
+  const timestamp = Date.parse(iso);
+  return Number.isNaN(timestamp) ? undefined : new Date(timestamp);
+}
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const { articles, videos } = await getSitemapContent();
+
   return [
-    { url: base, changeFrequency: "hourly", priority: 1 },
-    { url: `${base}/marcadores`, changeFrequency: "hourly", priority: .9 },
-    { url: `${base}/loterias`, changeFrequency: "hourly", priority: .9 },
-    { url: `${base}/videos`, changeFrequency: "hourly", priority: .9 },
-    ...wordpressCategorySlugs.map((slug) => ({ url: `${base}/categoria/${slug}`, changeFrequency: "hourly" as const, priority: .8 })),
-    ...fallbackArticles.map((article) => ({ url: `${base}/noticias/${article.slug}`, changeFrequency: "daily" as const, priority: .7 })),
-    ...localCategoryArticles.map((article) => ({ url: `${base}/noticias/${article.slug}`, changeFrequency: "daily" as const, priority: .6 })),
-    ...fallbackVideos.map((video) => ({ url: `${base}/videos/${video.slug}`, changeFrequency: "daily" as const, priority: .7 })),
+    { url: canonicalUrl("/"), changeFrequency: "hourly", priority: 1 },
+    { url: canonicalUrl("/marcadores"), changeFrequency: "hourly", priority: .9 },
+    { url: canonicalUrl("/loterias"), changeFrequency: "hourly", priority: .9 },
+    { url: canonicalUrl("/videos"), changeFrequency: "hourly", priority: .9 },
+    ...wordpressCategorySlugs.map((slug) => ({
+      url: canonicalUrl(`/categoria/${slug}`),
+      changeFrequency: "hourly" as const,
+      priority: .8,
+    })),
+    ...articles.map((article) => ({
+      url: canonicalUrl(`/noticias/${article.slug}`),
+      lastModified: sitemapDate(article.lastModified),
+      changeFrequency: "daily" as const,
+      priority: .7,
+    })),
+    ...videos.map((video) => ({
+      url: canonicalUrl(`/videos/${video.slug}`),
+      lastModified: sitemapDate(video.lastModified),
+      changeFrequency: "daily" as const,
+      priority: .7,
+    })),
   ];
 }

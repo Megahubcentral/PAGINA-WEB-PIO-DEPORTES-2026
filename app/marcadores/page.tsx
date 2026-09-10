@@ -1,14 +1,22 @@
+import type { Metadata } from "next";
 import { ScoreStrip, ScoresHub } from "../components/Scoreboard";
 import { SiteFooter, SiteHeader } from "../components/Portal";
+import { JsonLd } from "../components/JsonLd";
+import { breadcrumbJsonLd, routeMetadata } from "../../lib/seo";
 
-export const metadata = {
+export const metadata: Metadata = routeMetadata({
+  path: "/marcadores",
   title: "Marcadores y resultados",
   description: "Resultados, partidos en vivo y próximos encuentros en Pío Deportes.",
-};
+});
 
 export default function ScoresPage() {
   return (
     <>
+      <JsonLd data={breadcrumbJsonLd([
+        { name: "Inicio", path: "/" },
+        { name: "Marcadores", path: "/marcadores" },
+      ])} />
       <SiteHeader />
       <ScoreStrip />
       <main>

@@ -1,28 +1,57 @@
 /* eslint-disable @next/next/no-img-element -- WordPress controls the video poster CDN. */
 import type { Metadata } from "next";
 import Link from "next/link";
+import { notFound } from "next/navigation";
+import { JsonLd } from "../../components/JsonLd";
 import { AdSlot } from "../../components/LiveWidgets";
 import { SiteFooter, SiteHeader } from "../../components/Portal";
+import { breadcrumbJsonLd, routeMetadata, videoObjectJsonLd } from "../../../lib/seo";
 import { getVideoBySlug, getVideoItems } from "../../../lib/wordpress";
+
+export const revalidate = 120;
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const video = await getVideoBySlug(slug);
-  return {
-    title: video?.title ?? "Video deportivo",
-    description: video?.excerpt,
-    openGraph: video ? { images: [video.thumbnail] } : undefined,
-  };
+  if (!video) {
+    return { title: "Video no encontrado", robots: { index: false, follow: false } };
+  }
+  return routeMetadata({
+    path: `/videos/${video.slug}`,
+    title: video.title,
+    description: video.excerpt,
+    image: video.thumbnail,
+    imageAlt: video.title,
+    ogType: "video.other",
+    publishedTime: video.date,
+    modifiedTime: video.dateModified,
+  });
 }
 
 export default async function VideoPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const [video, videos] = await Promise.all([getVideoBySlug(slug), getVideoItems(5)]);
-  if (!video) return null;
+  if (!video) notFound();
   const directVideo = Boolean(video.embedUrl && /\.(mp4|webm|ogg)(\?|$)/i.test(video.embedUrl));
+  const videoSchema = videoObjectJsonLd({
+    title: video.title,
+    description: video.excerpt,
+    thumbnail: video.thumbnail,
+    uploadDate: video.date,
+    duration: video.duration,
+    embedUrl: directVideo ? undefined : video.embedUrl,
+    contentUrl: directVideo ? video.embedUrl : undefined,
+    path: `/videos/${video.slug}`,
+  });
 
   return (
     <>
+      {videoSchema ? <JsonLd data={videoSchema} /> : null}
+      <JsonLd data={breadcrumbJsonLd([
+        { name: "Inicio", path: "/" },
+        { name: "Pio TV", path: "/videos" },
+        { name: video.title, path: `/videos/${video.slug}` },
+      ])} />
       <SiteHeader />
       <main className="video-watch-page">
         <div className="shell video-watch-layout">
@@ -47,7 +76,7 @@ export default async function VideoPage({ params }: { params: Promise<{ slug: st
                 />
               ) : (
                 <a href={video.sourceUrl} target="_blank" rel="noreferrer" className="video-player-poster">
-                  <img src={video.thumbnail} alt="" />
+                  <img src={video.thumbnail} alt={video.title} />
                   <span>▶</span>
                   <strong>Reproducir en el canal oficial</strong>
                 </a>
@@ -55,7 +84,10 @@ export default async function VideoPage({ params }: { params: Promise<{ slug: st
             </div>
 
             <p className="video-watch-deck">{video.excerpt}</p>
-            <div className="video-watch-meta"><span>Pio Deportes</span><span>{video.publishedAt}</span></div>
+            <div className="video-watch-meta">
+              <span>Pio Deportes</span>
+              <time dateTime={video.date}>{video.publishedAt}</time>
+            </div>
           </article>
 
           <aside className="video-watch-aside">

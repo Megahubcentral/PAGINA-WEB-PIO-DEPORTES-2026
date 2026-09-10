@@ -4,7 +4,9 @@ import Link from "next/link";
 import { AdSlot } from "../../components/LiveWidgets";
 import { SiteFooter, SiteHeader } from "../../components/Portal";
 import { ADSENSE_SLOTS } from "../../../lib/adsense";
+import { breadcrumbJsonLd, routeMetadata } from "../../../lib/seo";
 import { getCategoryArticles, getInternationalArticlePage, wordpressCategorySlugs } from "../../../lib/wordpress";
+import { JsonLd } from "../../components/JsonLd";
 
 const profiles: Record<string, { title: string; label: string; description: string; code: string }> = {
   nacionales: { title: "Nacionales", label: "República Dominicana", description: "Selecciones, atletas, federaciones y competencias que definen la actualidad deportiva dominicana.", code: "RD" },
@@ -51,6 +53,8 @@ function CategoryPagination({ page, totalPages }: { page: number; totalPages: nu
   );
 }
 
+export const revalidate = 120;
+
 export function generateStaticParams() {
   return wordpressCategorySlugs.map((slug) => ({ slug }));
 }
@@ -66,7 +70,12 @@ export async function generateMetadata({
   const profile = profiles[slug] ?? defaultProfile;
   const page = parsePage((await searchParams).page);
   const title = slug === "internacional" && page > 1 ? `${profile.title} · Página ${page}` : profile.title;
-  return { title, description: `Últimas noticias de ${profile.title} en Pío Deportes.` };
+  return routeMetadata({
+    path: `/categoria/${slug}`,
+    title,
+    description: profile.description,
+    index: page === 1,
+  });
 }
 
 export default async function CategoryPage({
@@ -90,6 +99,10 @@ export default async function CategoryPage({
   if (!articles.length && !pagination) {
     return (
       <>
+        <JsonLd data={breadcrumbJsonLd([
+          { name: "Inicio", path: "/" },
+          { name: profile.title, path: `/categoria/${slug}` },
+        ])} />
         <SiteHeader />
         <main>
           <header className={`page-hero category-hero category-hero--${slug}`}>
@@ -111,6 +124,10 @@ export default async function CategoryPage({
 
   return (
     <>
+      <JsonLd data={breadcrumbJsonLd([
+        { name: "Inicio", path: "/" },
+        { name: profile.title, path: `/categoria/${slug}` },
+      ])} />
       <SiteHeader />
       <main>
         <header className={`page-hero category-hero category-hero--${slug}`}>

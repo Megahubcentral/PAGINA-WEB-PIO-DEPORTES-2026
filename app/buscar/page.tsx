@@ -1,7 +1,14 @@
+import type { Metadata } from "next";
 import { ArticleCard, SiteFooter, SiteHeader } from "../components/Portal";
+import { routeMetadata } from "../../lib/seo";
 import { getLatestArticles } from "../../lib/wordpress";
 
-export const metadata = { title: "Buscar" };
+export const metadata: Metadata = routeMetadata({
+  path: "/buscar",
+  title: "Buscar",
+  description: "Busca noticias deportivas en Pío Deportes.",
+  index: false,
+});
 
 export default async function SearchPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const { q = "" } = await searchParams;

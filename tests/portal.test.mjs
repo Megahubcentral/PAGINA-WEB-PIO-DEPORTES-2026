@@ -53,6 +53,8 @@ test("the portal includes its core editorial surfaces", async () => {
   assert.match(widgets, /headlines\.slice\(0, 20\)/);
   assert.match(widgets, /onMouseEnter=\{\(\) => setPaused\(true\)\}/);
   assert.match(layout, /<BreakingTickerProvider>/);
+  assert.match(layout, /GTM-5VGC2J7H/);
+  assert.match(layout, /googletagmanager.com\/ns.html/);
   assert.match(wordpress, /WORDPRESS_API_URL/);
   assert.match(wordpress, /orderby=date&order=desc/);
   assert.match(wordpress, /categories_exclude/);
@@ -273,3 +275,60 @@ test("the homepage Instagram feed is server-side, cached and automatically refre
   assert.match(deployment, /Instagram API with Instagram Login/);
   assert.match(styles, /\.instagram-grid/);
 });
+
+test("SEO technical signals cover canonicals, structured data, sitemaps and real 404s", async () => {
+  const [seo, layout, home, robots, sitemap, wordpress, article, video, category, search, newsSitemap, proxy, notFound] = await Promise.all([
+    readFile(new URL("lib/seo.ts", root), "utf8"),
+    readFile(new URL("app/layout.tsx", root), "utf8"),
+    readFile(new URL("app/page.tsx", root), "utf8"),
+    readFile(new URL("app/robots.ts", root), "utf8"),
+    readFile(new URL("app/sitemap.ts", root), "utf8"),
+    readFile(new URL("lib/wordpress.ts", root), "utf8"),
+    readFile(new URL("app/noticias/[slug]/page.tsx", root), "utf8"),
+    readFile(new URL("app/videos/[slug]/page.tsx", root), "utf8"),
+    readFile(new URL("app/categoria/[slug]/page.tsx", root), "utf8"),
+    readFile(new URL("app/buscar/page.tsx", root), "utf8"),
+    readFile(new URL("app/news-sitemap.xml/route.ts", root), "utf8"),
+    readFile(new URL("proxy.ts", root), "utf8"),
+    readFile(new URL("app/not-found.tsx", root), "utf8"),
+  ]);
+
+  assert.match(seo, /canonicalUrl/);
+  assert.match(seo, /NewsArticle/);
+  assert.match(seo, /Organization/);
+  assert.match(seo, /BreadcrumbList/);
+  assert.match(seo, /VideoObject/);
+  assert.match(seo, /alternates: \{ canonical: url \}/);
+  assert.match(layout, /organizationJsonLd/);
+  assert.match(home, /homeMetadata/);
+  assert.match(robots, /news-sitemap\.xml/);
+  assert.match(robots, /sitemap\.xml/);
+  assert.match(sitemap, /getSitemapContent/);
+  assert.match(sitemap, /lastModified/);
+  assert.match(sitemap, /toAbsoluteIsoDate/);
+  assert.doesNotMatch(sitemap, /fallbackArticles\.map/);
+  assert.match(wordpress, /dateModified/);
+  assert.match(wordpress, /getSitemapContent/);
+  assert.match(wordpress, /getNewsSitemapEntries/);
+  assert.match(wordpress, /newsWindowMs = 48/);
+  assert.match(wordpress, /sitemapPageCap = 50/);
+  assert.doesNotMatch(wordpress, /\?\? fallbackArticles\[0\]/);
+  assert.doesNotMatch(wordpress, /\?\? fallbackVideos\[0\]/);
+  assert.match(article, /notFound\(\)/);
+  assert.match(article, /newsArticleJsonLd/);
+  assert.match(article, /breadcrumbJsonLd/);
+  assert.match(article, /dateTime=\{article\.date\}/);
+  assert.match(video, /videoObjectJsonLd/);
+  assert.match(video, /notFound\(\)/);
+  assert.match(category, /profile\.description/);
+  assert.match(category, /index: page === 1/);
+  assert.match(search, /index: false/);
+  assert.match(newsSitemap, /news:publication_date/);
+  assert.match(newsSitemap, /news:name/);
+  assert.match(newsSitemap, /<news:language>es<\/news:language>/);
+  assert.match(proxy, /export function proxy/);
+  assert.match(proxy, /status: 410/);
+  assert.match(proxy, /x-robots-tag/);
+  assert.match(notFound, /index: false/);
+});
+

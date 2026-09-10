@@ -1,9 +1,12 @@
+import type { Metadata } from "next";
 import { SiteFooter, SiteHeader } from "../components/Portal";
+import { routeMetadata } from "../../lib/seo";
 
-export const metadata = {
+export const metadata: Metadata = routeMetadata({
+  path: "/terminos",
   title: "Términos y privacidad",
   description: "Condiciones de uso y política de privacidad del portal Pío Deportes.",
-};
+});
 
 export default function TermsPage() {
   return (

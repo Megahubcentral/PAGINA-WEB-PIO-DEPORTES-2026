@@ -1,15 +1,18 @@
 import type { Metadata } from "next";
 import { HorseRacingHub } from "../components/HorseRacingHub";
+import { JsonLd } from "../components/JsonLd";
 import { LotteryHub } from "../components/LotteryHub";
 import { SiteFooter, SiteHeader } from "../components/Portal";
 import { getHorseRacingFeed } from "../../lib/horse-racing-provider";
 import { getLotteryFeed } from "../../lib/lottery-provider";
 import { todayKeyInAst } from "../../lib/lottery-view";
+import { breadcrumbJsonLd, routeMetadata } from "../../lib/seo";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = routeMetadata({
+  path: "/loterias",
   title: "Loterías e hípica: resultados de hoy",
   description: "Quinielas de hoy en República Dominicana: 1er, 2do y 3er premio de Loto Real, Nacional, Loteka y LEIDSA, más loto, pool, kino y resultados hípicos.",
-};
+});
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +24,10 @@ export default async function LotteriesPage() {
   const today = todayKeyInAst();
   return (
     <>
+      <JsonLd data={breadcrumbJsonLd([
+        { name: "Inicio", path: "/" },
+        { name: "Loterías", path: "/loterias" },
+      ])} />
       <SiteHeader />
       <main className="lottery-page">
         <section className="lottery-hero">

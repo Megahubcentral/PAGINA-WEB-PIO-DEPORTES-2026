@@ -1,13 +1,17 @@
 /* eslint-disable @next/next/no-img-element -- WordPress controls the video poster CDN. */
+import type { Metadata } from "next";
 import Link from "next/link";
 import { AdSlot } from "../components/LiveWidgets";
+import { JsonLd } from "../components/JsonLd";
 import { SiteFooter, SiteHeader } from "../components/Portal";
+import { breadcrumbJsonLd, routeMetadata } from "../../lib/seo";
 import { getVideoItems } from "../../lib/wordpress";
 
-export const metadata = {
+export const metadata: Metadata = routeMetadata({
+  path: "/videos",
   title: "Pio TV — Videos deportivos",
   description: "Highlights, entrevistas, análisis y videos deportivos de Pio Deportes.",
-};
+});
 
 export const revalidate = 120;
 
@@ -17,6 +21,10 @@ export default async function VideosPage() {
 
   return (
     <>
+      <JsonLd data={breadcrumbJsonLd([
+        { name: "Inicio", path: "/" },
+        { name: "Pio TV", path: "/videos" },
+      ])} />
       <SiteHeader />
       <main>
         <header className="page-hero video-page-hero">
