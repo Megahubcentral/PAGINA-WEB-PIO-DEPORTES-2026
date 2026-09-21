@@ -479,6 +479,7 @@ export function AdSlot({
   layout,
   layoutKey,
   fullWidthResponsive = true,
+  label,
 }: {
   size?: string;
   slot?: string;
@@ -487,6 +488,7 @@ export function AdSlot({
   layout?: "in-article";
   layoutKey?: string;
   fullWidthResponsive?: boolean;
+  label?: string;
 }) {
   const client = ADSENSE_CLIENT;
   const configuredSlot =
@@ -556,10 +558,10 @@ export function AdSlot({
   if (client && configuredSlot) {
     // Localhost rarely fills AdSense; show labeled placeholders so layout is reviewable.
     if (process.env.NODE_ENV === "development") {
-      const label = ADSENSE_SLOT_LABELS[configuredSlot] ?? `AdSense · ${configuredSlot}`;
+      const previewLabel = label ?? ADSENSE_SLOT_LABELS[configuredSlot] ?? `AdSense · ${configuredSlot}`;
       return (
-        <div className="ad-slot ad-slot-preview" aria-label={`Vista previa: ${label}`}>
-          <span>{label}</span>
+        <div className="ad-slot ad-slot-preview" aria-label={`Vista previa: ${previewLabel}`}>
+          <span>{previewLabel}</span>
           <small>Slot {configuredSlot} · solo local</small>
         </div>
       );

@@ -1,17 +1,18 @@
 /* eslint-disable @next/next/no-img-element -- Local editorial assets are pre-compressed and WordPress can return remote media. */
 import type { Metadata } from "next";
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { homeMetadata } from "../lib/seo";
 import { AudioPlayer, AdSlot } from "./components/LiveWidgets";
 import { RotatingHomeSidebarAd } from "./components/DirectAds";
-import { ADSENSE_SLOTS } from "../lib/adsense";
+import { HOME_ADSENSE } from "../lib/adsense";
 import { aesDominicanaWideAd } from "../lib/direct-ads";
 import { ArticleCard, SectionHeading, SiteFooter, SiteHeader } from "./components/Portal";
 import { ScoreStrip } from "./components/Scoreboard";
 import { VideoCarousel } from "./components/VideoCarousel";
 import { LotteryCompact } from "./components/LotteryCompact";
 import { InstagramFeed } from "./components/InstagramFeed";
-import { getArticlesByTag, getCategoryArticles, getVideoItems, homeNewsQuery, type Article } from "../lib/wordpress";
+import { getArticlesByTag, getCategoryArticles, getVideoItems, homeNewsQuery, sortByNewest, type Article } from "../lib/wordpress";
 import { getLotteryFeed } from "../lib/lottery-provider";
 import { getInstagramFeed } from "../lib/instagram-provider";
 
@@ -20,20 +21,13 @@ export const revalidate = 120;
 
 function takeUnique(pool: Article[], count: number, used: Set<string>) {
   const selected: Article[] = [];
-  for (const article of pool) {
+  for (const article of sortByNewest(pool)) {
     if (used.has(article.slug)) continue;
     used.add(article.slug);
     selected.push(article);
     if (selected.length === count) break;
   }
   return selected;
-}
-
-function interleaveArticlePools(...pools: Article[][]) {
-  const longest = Math.max(...pools.map((pool) => pool.length));
-  return Array.from({ length: longest }, (_, index) => pools.map((pool) => pool[index]))
-    .flat()
-    .filter((article): article is Article => Boolean(article));
 }
 
 function HomeFeatureBlock({
@@ -43,6 +37,8 @@ function HomeFeatureBlock({
   articles,
   reverse = false,
   contrast = false,
+  aside,
+  asideSide = "right",
 }: {
   kicker: string;
   title: string;
@@ -50,25 +46,48 @@ function HomeFeatureBlock({
   articles: Article[];
   reverse?: boolean;
   contrast?: boolean;
+  aside?: ReactNode;
+  asideSide?: "left" | "right";
 }) {
   const lead = articles[0];
   const stack = articles.slice(1, 5);
   if (!lead) return null;
 
+  const pair = (
+    <div className={[reverse ? "feature-pair reverse" : "feature-pair", aside ? "coverage-feature" : ""].filter(Boolean).join(" ")}>
+      <ArticleCard article={lead} />
+      <div className="headline-stack">
+        {stack.map((article) => (
+          <ArticleCard key={article.id} article={article} compact />
+        ))}
+      </div>
+    </div>
+  );
+
   return (
     <section className={contrast ? "home-sport-section is-contrast" : "home-sport-section"}>
       <div className="shell">
         <SectionHeading kicker={kicker} title={title} href={href} />
-        <div className={reverse ? "feature-pair reverse" : "feature-pair"}>
-          <ArticleCard article={lead} />
-          <div className="headline-stack">
-            {stack.map((article) => (
-              <ArticleCard key={article.id} article={article} compact />
-            ))}
+        {aside ? (
+          <div className={asideSide === "left" ? "lead-grid coverage-layout is-ad-left" : "lead-grid coverage-layout"}>
+            <div className="coverage-main">{pair}</div>
+            <aside className="lead-aside">
+              <div className="lead-ad">{aside}</div>
+            </aside>
           </div>
-        </div>
+        ) : (
+          pair
+        )}
       </div>
     </section>
+  );
+}
+
+function HomeAdSense({ unit }: { unit: (typeof HOME_ADSENSE)[keyof typeof HOME_ADSENSE] }) {
+  return (
+    <div className="shell wide-ad">
+      <AdSlot slot={unit.slot} label={unit.label} />
+    </div>
   );
 }
 
@@ -114,17 +133,19 @@ export default async function Home() {
   const sideStories = topStories.slice(1, 3);
   const moreStories = topStories.slice(3, 5);
   const latest = takeUnique(destacadosArticles, 4, usedArticles);
-  const nationalStories = takeUnique(nationalArticles, 4, usedArticles);
+  const lidomStories = takeUnique(lidomArticles, 5, usedArticles);
   const mlbStories = takeUnique(mlbArticles, 5, usedArticles);
   const nbaStories = takeUnique(nbaArticles, 5, usedArticles);
-  const lidomStories = takeUnique(lidomArticles, 5, usedArticles);
+  const nationalStories = takeUnique(nationalArticles, 4, usedArticles);
   const footballStories = takeUnique(footballArticles, 5, usedArticles);
   const nflStories = takeUnique(nflArticles, 5, usedArticles);
+  const nhlStories = takeUnique(hockeyArticles, 5, usedArticles);
   const moreSportsStories = takeUnique(
-    interleaveArticlePools(hockeyArticles, tennisArticles, caribbeanArticles, otherArticles),
+    [...tennisArticles, ...caribbeanArticles, ...otherArticles],
     4,
     usedArticles,
   );
+  const pioTvVideos = sortByNewest(videos);
 
   return (
     <>
@@ -188,19 +209,35 @@ export default async function Home() {
           ) : null}
         </section>
 
-        <div className="shell wide-ad">
-          <AdSlot slot={ADSENSE_SLOTS.entreSeccionesHome} />
-        </div>
+        <HomeAdSense unit={HOME_ADSENSE.afterPortada} />
 
-        <section className="media-section" id="multimedia">
-          <div className="shell">
-            <SectionHeading kicker="Videos · Highlights · Entrevistas" title="Pio TV" href="/videos" />
-            <div className="media-grid media-grid-carousel">
-              <VideoCarousel videos={videos} />
-              <div id="radio"><AudioPlayer /></div>
-            </div>
-          </div>
-        </section>
+        <HomeFeatureBlock
+          kicker="Béisbol dominicano"
+          title="LIDOM"
+          href="/categoria/lidom"
+          articles={lidomStories}
+          aside={<RotatingHomeSidebarAd lane="secondary" />}
+          asideSide="left"
+        />
+
+        <HomeFeatureBlock
+          kicker="MLB · Grandes Ligas"
+          title="Béisbol"
+          href="/categoria/mlb"
+          articles={mlbStories}
+          reverse
+          contrast
+        />
+
+        <HomeAdSense unit={HOME_ADSENSE.afterMlb} />
+
+        <HomeFeatureBlock
+          kicker="NBA · FIBA"
+          title="Baloncesto"
+          href="/categoria/baloncesto"
+          articles={nbaStories}
+          aside={<RotatingHomeSidebarAd lane="primary" />}
+        />
 
         <section className="national-section">
           <div className="shell">
@@ -210,54 +247,22 @@ export default async function Home() {
                 <ArticleCard key={article.id} article={article} />
               ))}
             </div>
-            <div className="national-ad">
-              <AdSlot size="970 × 90" creative={aesDominicanaWideAd} />
-            </div>
           </div>
         </section>
-
-        <section className="home-sport-section">
-          <div className="shell">
-            <SectionHeading kicker="Grandes Ligas" title="MLB" href="/categoria/mlb" />
-            <div className="lead-grid coverage-layout">
-              <div className="coverage-main">
-                <div className="feature-pair coverage-feature">
-                  {mlbStories[0] ? <ArticleCard article={mlbStories[0]} /> : null}
-                  <div className="headline-stack">
-                    {mlbStories.slice(1).map((article) => (
-                      <ArticleCard key={article.id} article={article} compact />
-                    ))}
-                  </div>
-                </div>
-              </div>
-              <aside className="lead-aside">
-                <div className="lead-ad">
-                  <RotatingHomeSidebarAd lane="secondary" />
-                </div>
-              </aside>
-            </div>
-          </div>
-        </section>
-
-        <HomeFeatureBlock
-          kicker="Baloncesto profesional"
-          title="NBA"
-          href="/categoria/nba"
-          articles={nbaStories}
-          reverse
-          contrast
-        />
-
-        <HomeFeatureBlock
-          kicker="Béisbol invernal"
-          title="LIDOM"
-          href="/categoria/lidom"
-          articles={lidomStories}
-        />
 
         <div className="shell wide-ad">
-          <AdSlot slot={ADSENSE_SLOTS.entreSeccionesHome} />
+          <AdSlot size="970 × 90" creative={aesDominicanaWideAd} />
         </div>
+
+        <section className="media-section" id="multimedia">
+          <div className="shell">
+            <SectionHeading kicker="Videos · Highlights · Entrevistas" title="Pio TV" href="/videos" />
+            <div className="media-grid media-grid-carousel">
+              <VideoCarousel videos={pioTvVideos} />
+              <div id="radio"><AudioPlayer /></div>
+            </div>
+          </div>
+        </section>
 
         <HomeFeatureBlock
           kicker="Juego internacional"
@@ -268,6 +273,8 @@ export default async function Home() {
           contrast
         />
 
+        <HomeAdSense unit={HOME_ADSENSE.afterFutbol} />
+
         <HomeFeatureBlock
           kicker="Fútbol americano"
           title="NFL"
@@ -275,9 +282,22 @@ export default async function Home() {
           articles={nflStories}
         />
 
+        <HomeFeatureBlock
+          kicker="Hockey"
+          title="NHL"
+          href="/categoria/nhl"
+          articles={nhlStories}
+          reverse
+          contrast
+        />
+
+        <HomeAdSense unit={HOME_ADSENSE.lower} />
+
+        <LotteryCompact feed={lotteryFeed} />
+
         <section className="more-sports-section">
           <div className="shell">
-            <SectionHeading kicker="Hockey · Tenis · Caribe · Otros" title="Más deportes" href="/categoria/otros-deportes" />
+            <SectionHeading kicker="Tenis · Caribe · Otros" title="Más deportes" href="/categoria/otros-deportes" />
             <div className="more-sports-grid">
               {moreSportsStories.map((article) => (
                 <ArticleCard key={article.id} article={article} />
@@ -286,12 +306,7 @@ export default async function Home() {
           </div>
         </section>
 
-        <div className="shell wide-ad">
-          <AdSlot slot={ADSENSE_SLOTS.entreSeccionesHome} />
-        </div>
-
         <InstagramFeed feed={instagramFeed} />
-        <LotteryCompact feed={lotteryFeed} />
       </main>
       <SiteFooter />
     </>

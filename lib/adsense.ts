@@ -10,6 +10,14 @@ export const ADSENSE_SLOTS = {
   inFeed: "4124142446",
 } as const;
 
+/** Home AdSense placements. Same unit until dedicated slots exist in AdSense. */
+export const HOME_ADSENSE = {
+  afterPortada: { slot: ADSENSE_SLOTS.entreSeccionesHome, label: "Google Home #1 — After Portada" },
+  afterMlb: { slot: ADSENSE_SLOTS.entreSeccionesHome, label: "Google Home #2 — After MLB" },
+  afterFutbol: { slot: ADSENSE_SLOTS.entreSeccionesHome, label: "Google Home #3 — After Fútbol" },
+  lower: { slot: ADSENSE_SLOTS.entreSeccionesHome, label: "Google Home #4 — Lower" },
+} as const;
+
 /** Human labels for local layout preview (development only). */
 export const ADSENSE_SLOT_LABELS: Record<string, string> = {
   [ADSENSE_SLOTS.entreSeccionesHome]: "Entre secciones · home",

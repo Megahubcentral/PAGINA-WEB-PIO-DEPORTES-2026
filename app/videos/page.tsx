@@ -38,7 +38,7 @@ export default async function VideosPage() {
         <section className="shell video-archive">
           <div className="video-archive-heading">
             <div><span>Selección audiovisual</span><h2>Videos destacados</h2></div>
-            <small>Actualización continua desde WordPress</small>
+            <small>Entradas de WordPress con formato Video, categoría o etiqueta videos</small>
           </div>
 
           <article className="video-archive-feature">

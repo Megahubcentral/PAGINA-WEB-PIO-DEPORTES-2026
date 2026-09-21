@@ -73,6 +73,7 @@ export const fallbackVideos: VideoItem[] = [
     thumbnail: "/news/reinas.jpg",
     publishedAt: "Hace 18 minutos",
     duration: "03:42",
+    date: isoFromNow(18 * 60 * 1000),
     sourceUrl: pioYoutubeChannel,
   },
   {
@@ -84,6 +85,7 @@ export const fallbackVideos: VideoItem[] = [
     thumbnail: "/news/mlb.jpg",
     publishedAt: "Hace 46 minutos",
     duration: "02:18",
+    date: isoFromNow(46 * 60 * 1000),
     sourceUrl: pioYoutubeChannel,
   },
   {
@@ -95,6 +97,7 @@ export const fallbackVideos: VideoItem[] = [
     thumbnail: "/news/caribe.jpg",
     publishedAt: "Hace 1 hora",
     duration: "01:56",
+    date: isoFromNow(60 * 60 * 1000),
     sourceUrl: pioYoutubeChannel,
   },
   {
@@ -106,6 +109,7 @@ export const fallbackVideos: VideoItem[] = [
     thumbnail: "/news/futbol.jpg",
     publishedAt: "Hace 2 horas",
     duration: "08:15",
+    date: isoFromNow(2 * 60 * 60 * 1000),
     sourceUrl: pioYoutubeChannel,
   },
   {
@@ -117,6 +121,7 @@ export const fallbackVideos: VideoItem[] = [
     thumbnail: "/news/nba.jpg",
     publishedAt: "Hace 3 horas",
     duration: "04:09",
+    date: isoFromNow(3 * 60 * 60 * 1000),
     sourceUrl: pioYoutubeChannel,
   },
   {
@@ -128,6 +133,7 @@ export const fallbackVideos: VideoItem[] = [
     thumbnail: "/news/voleibol.jpg",
     publishedAt: "Hace 4 horas",
     duration: "05:20",
+    date: isoFromNow(4 * 60 * 60 * 1000),
     sourceUrl: pioYoutubeChannel,
   },
 ];
@@ -522,13 +528,19 @@ export const wordpressCategorySlugs = [
   "nhl",
   "tennis",
   "beisbol-del-caribe",
+  "boxeo",
+  "formula-1",
+  "motogp",
   "otros-deportes",
 ] as const;
 
 const categorySlugAliases: Record<string, string> = {
   tenis: "tennis",
-  baloncesto: "nba",
   hockey: "nhl",
+  fiba: "baloncesto-fiba",
+  f1: "formula-1",
+  formula1: "formula-1",
+  "moto-gp": "motogp",
 };
 
 function resolveCategorySlug(slug: string) {
@@ -646,15 +658,17 @@ export function isNationalArticle(article: Article) {
   return name === "nacional" || name === "nacionales";
 }
 
+function publishedTime(value?: string) {
+  const time = Date.parse(value ?? "");
+  return Number.isNaN(time) ? Number.NEGATIVE_INFINITY : time;
+}
+
+export function sortByNewest<T extends { date?: string }>(items: T[]) {
+  return [...items].sort((left, right) => publishedTime(right.date) - publishedTime(left.date));
+}
+
 function sortArticlesByNewest(articles: Article[]) {
-  return [...articles].sort((left, right) => {
-    const rightTime = Date.parse(right.date ?? "");
-    const leftTime = Date.parse(left.date ?? "");
-    if (Number.isNaN(rightTime) && Number.isNaN(leftTime)) return 0;
-    if (Number.isNaN(rightTime)) return 1;
-    if (Number.isNaN(leftTime)) return -1;
-    return rightTime - leftTime;
-  });
+  return sortByNewest(articles);
 }
 
 function localInternationalArticles() {
@@ -769,8 +783,8 @@ async function wpFetchResult<T = unknown>(path: string): Promise<{ data: T; tota
 function mergeUniqueArticles(primary: Article[], editorial: Article[], limit: number) {
   const slugs = new Set(primary.map((article) => article.slug));
   return [
-    ...primary,
-    ...editorial.filter((article) => !slugs.has(article.slug)),
+    ...sortArticlesByNewest(primary),
+    ...sortArticlesByNewest(editorial.filter((article) => !slugs.has(article.slug))),
   ].slice(0, limit);
 }
 
@@ -781,9 +795,9 @@ export async function getLatestArticles(limit = 12): Promise<Article[]> {
     );
     return posts?.length
       ? mergeUniqueArticles(posts.map(normalizePost), localArticleArchive, limit)
-      : localArticleArchive.slice(0, limit);
+      : sortArticlesByNewest(localArticleArchive).slice(0, limit);
   } catch {
-    return localArticleArchive.slice(0, limit);
+    return sortArticlesByNewest(localArticleArchive).slice(0, limit);
   }
 }
 
@@ -883,7 +897,7 @@ export async function getArticlesByTag(slug: string, limit = 9, options?: Articl
       const posts = await wpFetch(
         `/posts?tags=${tagIds}&per_page=${limit}&orderby=date&order=desc${excludeQuery}&${embedQuery}`,
       ) as WpPost[] | null;
-      if (posts?.length) return withoutExcludedTags(posts.map(normalizePost), options);
+      if (posts?.length) return sortArticlesByNewest(withoutExcludedTags(posts.map(normalizePost), options));
     }
   } catch {
     // Fall through to the latest-news backup below.
@@ -1101,7 +1115,7 @@ export async function getCategoryArticles(slug: string, options?: ArticleQueryOp
   if (resolvedSlug === "internacional") {
     return getInternationalArticles(articlesPerCategory, options);
   }
-  if (resolvedSlug === "nba" && !options?.exactCategory) {
+  if (resolvedSlug === "baloncesto") {
     return getBasketballArticles(articlesPerCategory, options);
   }
 
@@ -1127,29 +1141,61 @@ export async function getCategoryArticles(slug: string, options?: ArticleQueryOp
   } catch {
     // Fall through to representative local content.
   }
-  return categoryEditorial.length
-    ? mergeUniqueArticles([], categoryEditorial, articlesPerCategory)
-    : withoutExcludedTags(localArticleArchive, options).slice(0, articlesPerCategory);
+  return categoryEditorial.slice(0, articlesPerCategory);
+}
+
+const videoTermSlugs = "videos,video";
+
+async function getVideoTermIds(taxonomy: "categories" | "tags") {
+  const terms = await wpFetch(`/${taxonomy}?slug=${encodeURIComponent(videoTermSlugs)}`) as WpTermRecord[] | null;
+  return (terms ?? []).map((term) => term.id).filter(Boolean);
+}
+
+function mergeUniqueWpPosts(groups: Array<WpPost[] | null | undefined>) {
+  const byId = new Map<number, WpPost>();
+  for (const group of groups) {
+    for (const post of group ?? []) {
+      if (post?.id && !byId.has(post.id)) byId.set(post.id, post);
+    }
+  }
+  return sortByNewest([...byId.values()]);
+}
+
+function isPlayableVideoPost(post: WpPost) {
+  return post.format === "video" || Boolean(firstVideoUrl(post.content?.rendered));
+}
+
+async function fetchWordpressVideoPosts(limit: number): Promise<WpPost[]> {
+  const perPage = Math.min(100, Math.max(limit * 2, 12));
+  const [categoryIds, tagIds] = await Promise.all([
+    getVideoTermIds("categories"),
+    getVideoTermIds("tags"),
+  ]);
+  const requests: Array<Promise<WpPost[] | null>> = [
+    wpFetch(`/posts?format=video&per_page=${perPage}&orderby=date&order=desc&${embedQuery}`),
+  ];
+  if (categoryIds.length) {
+    requests.push(
+      wpFetch(`/posts?categories=${categoryIds.join(",")}&per_page=${perPage}&orderby=date&order=desc&${embedQuery}`),
+    );
+  }
+  if (tagIds.length) {
+    requests.push(
+      wpFetch(`/posts?tags=${tagIds.join(",")}&per_page=${perPage}&orderby=date&order=desc&${embedQuery}`),
+    );
+  }
+  const groups = await Promise.all(requests);
+  return mergeUniqueWpPosts(groups).filter(isPlayableVideoPost).slice(0, limit);
 }
 
 export async function getVideoItems(limit = 8): Promise<VideoItem[]> {
   try {
-    const videoCategories = await wpFetch("/categories?slug=videos,video");
-    if (videoCategories?.[0]) {
-      const posts = await wpFetch(
-        `/posts?categories=${videoCategories[0].id}&per_page=${limit}&_embed=wp:featuredmedia,wp:term,author`,
-      );
-      if (posts?.length) return posts.map(normalizeVideoPost);
-    }
-
-    const formattedPosts = await wpFetch(
-      `/posts?format=video&per_page=${limit}&_embed=wp:featuredmedia,wp:term,author`,
-    );
-    if (formattedPosts?.length) return formattedPosts.map(normalizeVideoPost);
+    const posts = await fetchWordpressVideoPosts(limit);
+    if (posts.length) return sortByNewest(posts.map(normalizeVideoPost));
   } catch {
     // Keep the video section available while WordPress is offline or unconfigured.
   }
-  return fallbackVideos.slice(0, limit);
+  return sortByNewest(fallbackVideos).slice(0, limit);
 }
 
 export async function getVideoBySlug(slug: string): Promise<VideoItem | undefined> {
@@ -1211,13 +1257,21 @@ async function paginateWpPosts(query: string): Promise<WpSitemapPost[]> {
 
 async function getWordpressVideoPosts() {
   try {
-    const videoCategories = await wpFetch("/categories?slug=videos,video") as WpTermRecord[] | null;
-    const categoryPosts = videoCategories?.[0]?.id
-      ? await paginateWpPosts(`categories=${videoCategories[0].id}&${sitemapPostFields}`)
-      : [];
-    const formatPosts = await paginateWpPosts(`format=video&${sitemapPostFields}`);
+    const [categoryIds, tagIds] = await Promise.all([
+      getVideoTermIds("categories"),
+      getVideoTermIds("tags"),
+    ]);
+    const [categoryPosts, tagPosts, formatPosts] = await Promise.all([
+      categoryIds.length
+        ? paginateWpPosts(`categories=${categoryIds.join(",")}&${sitemapPostFields}`)
+        : Promise.resolve([] as WpSitemapPost[]),
+      tagIds.length
+        ? paginateWpPosts(`tags=${tagIds.join(",")}&${sitemapPostFields}`)
+        : Promise.resolve([] as WpSitemapPost[]),
+      paginateWpPosts(`format=video&${sitemapPostFields}`),
+    ]);
     const bySlug = new Map<string, WpSitemapPost>();
-    for (const post of [...categoryPosts, ...formatPosts]) {
+    for (const post of [...categoryPosts, ...tagPosts, ...formatPosts]) {
       if (post.slug && !bySlug.has(post.slug)) bySlug.set(post.slug, post);
     }
     return [...bySlug.values()];

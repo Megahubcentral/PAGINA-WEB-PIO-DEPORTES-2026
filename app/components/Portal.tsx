@@ -77,9 +77,21 @@ export function SectionHeading({ kicker, title, href }: { kicker?: string; title
     <div className="section-heading">
       <div>
         {kicker ? <span className="eyebrow">{kicker}</span> : null}
-        <h2>{title}</h2>
+        <h2>
+          {href ? (
+            <Link href={href} className="section-heading-title">
+              {title}
+            </Link>
+          ) : (
+            title
+          )}
+        </h2>
       </div>
-      {href ? <Link href={href}>Ver todo <span>→</span></Link> : null}
+      {href ? (
+        <Link href={href} className="section-heading-more">
+          Ver todo <span>→</span>
+        </Link>
+      ) : null}
     </div>
   );
 }
@@ -97,13 +109,17 @@ export function SiteFooter() {
           <Link href="/categoria/nacionales">Nacionales</Link>
           <Link href="/categoria/internacional">Internacional</Link>
           <Link href="/categoria/mlb">MLB</Link>
-          <Link href="/categoria/nba">NBA</Link>
           <Link href="/categoria/lidom">LIDOM</Link>
+          <Link href="/categoria/beisbol-del-caribe">Béisbol del Caribe</Link>
+          <Link href="/categoria/nba">NBA</Link>
+          <Link href="/categoria/baloncesto-fiba">FIBA</Link>
           <Link href="/categoria/futbol">Fútbol</Link>
+          <Link href="/categoria/boxeo">Boxeo</Link>
+          <Link href="/categoria/formula-1">Fórmula 1</Link>
+          <Link href="/categoria/motogp">MotoGP</Link>
           <Link href="/categoria/nfl">NFL</Link>
           <Link href="/categoria/nhl">NHL</Link>
           <Link href="/categoria/tennis">Tenis</Link>
-          <Link href="/categoria/beisbol-del-caribe">Béisbol del Caribe</Link>
           <Link href="/categoria/otros-deportes">Más deportes</Link>
           <Link href="/loterias">Loterías</Link>
         </div>

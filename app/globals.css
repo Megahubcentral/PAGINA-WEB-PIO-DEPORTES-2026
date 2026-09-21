@@ -212,8 +212,11 @@ button, input, select, textarea { font: inherit; }
 .eyebrow { display: block; color: var(--red); font-size: 9px; font-weight: 900; letter-spacing: .14em; text-transform: uppercase; margin-bottom: 5px; }
 .eyebrow.light { color: #ff5a5a; }
 .section-heading h2 { margin: 0; font-family: var(--display); font-size: clamp(30px, 3.2vw, 44px); font-weight: 900; line-height: 1; letter-spacing: -.04em; text-transform: uppercase; }
-.section-heading > a { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; white-space: nowrap; }
-.section-heading > a span { color: var(--red); margin-left: 7px; }
+.section-heading-title { color: inherit; }
+.section-heading-title:hover, .section-heading-title:focus-visible { color: var(--red); }
+.section-heading-title:focus-visible { outline: 3px solid var(--red); outline-offset: 3px; }
+.section-heading-more { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; white-space: nowrap; }
+.section-heading-more span { color: var(--red); margin-left: 7px; }
 .national-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 22px; }
 
 .home-sport-section { padding: 52px 0 58px; }
@@ -223,6 +226,9 @@ button, input, select, textarea { font: inherit; }
 
 .coverage-section { padding-top: 60px; padding-bottom: 70px; }
 .coverage-layout { align-items: start; }
+.coverage-layout.is-ad-left { grid-template-columns: 300px minmax(0, 1fr); }
+.coverage-layout.is-ad-left > .coverage-main { order: 2; }
+.coverage-layout.is-ad-left > .lead-aside { order: 1; }
 .coverage-main { min-width: 0; }
 @media (max-width: 1180px) {
   .coverage-layout .coverage-feature { grid-template-columns: 1fr; }
@@ -984,6 +990,8 @@ button, input, select, textarea { font: inherit; }
   .search { display: none; }
   .score-grid { grid-template-columns: 130px repeat(4, 210px); overflow-x: auto; }
   .lead-grid { grid-template-columns: 1fr; }
+  .coverage-layout.is-ad-left > .coverage-main { order: 0; }
+  .coverage-layout.is-ad-left > .lead-aside { order: 1; }
   .lead-top { grid-template-columns: 1.65fr 1fr; }
   .lead-aside { display: grid; gap: 18px; }
   .latest-panel { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
@@ -1054,6 +1062,8 @@ button, input, select, textarea { font: inherit; }
   .score-hover-detail { display: none; }
   .lead-section { padding-top: 22px; }
   .lead-grid { grid-template-columns: 1fr; }
+  .coverage-layout.is-ad-left > .coverage-main { order: 0; }
+  .coverage-layout.is-ad-left > .lead-aside { order: 1; }
   .lead-top { grid-template-columns: 1fr; }
   .hero-media { min-height: 485px; }
   .hero-copy { padding: 20px; }
@@ -1214,7 +1224,7 @@ button, input, select, textarea { font: inherit; }
   .legal-index { grid-template-columns: 1fr; }
   .legal-index strong { grid-column: auto; }
   .legal-contact-card a { font-size: 21px; }
-  .section-heading > a { display: none; }
+  .section-heading-more { display: none; }
   .instagram-heading { align-items: flex-start; flex-direction: column; gap: 13px; }
   .instagram-heading > a { padding-left: 54px; }
   .instagram-card { min-width: min(70vw, 280px); }
@@ -1266,11 +1276,13 @@ button, input, select, textarea { font: inherit; }
   .main-nav .nav-toggle,
   .main-nav .nav-toggle-text,
   .main-nav .nav-more-mobile { display: none !important; }
+  .main-nav .nav-home-desktop { display: flex !important; }
 }
 
 @media (max-width: 1050px) {
   .main-nav .nav-toggle { display: inline-flex !important; }
   .main-nav .nav-panel { display: none !important; }
   .main-nav .nav-checkbox:checked ~ .nav-panel { display: block !important; }
-  .main-nav .nav-more-desktop { display: none !important; }
+  .main-nav .nav-more-desktop,
+  .main-nav .nav-home-desktop { display: none !important; }
 }

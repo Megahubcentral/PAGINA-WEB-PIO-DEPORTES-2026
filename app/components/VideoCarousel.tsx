@@ -9,12 +9,17 @@ export function VideoCarousel({ videos }: { videos: VideoItem[] }) {
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
   const safeVideos = videos.length ? videos : [];
+  const newestId = safeVideos[0]?.id;
+
+  useEffect(() => {
+    setActive(0);
+  }, [newestId]);
 
   useEffect(() => {
     if (paused || safeVideos.length < 2) return;
     const timer = window.setInterval(() => setActive((current) => (current + 1) % safeVideos.length), 6500);
     return () => window.clearInterval(timer);
-  }, [paused, safeVideos.length]);
+  }, [paused, safeVideos.length, newestId]);
 
   if (!safeVideos.length) return null;
   const video = safeVideos[active];

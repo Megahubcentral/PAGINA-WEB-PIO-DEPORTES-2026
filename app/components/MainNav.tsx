@@ -1,31 +1,98 @@
 import Link from "next/link";
 import { Bars3Icon, ChevronDownIcon, XMarkIcon } from "@heroicons/react/24/outline";
 
-const primaryNav = [
-  ["Nacionales", "/categoria/nacionales"],
-  ["MLB", "/categoria/mlb"],
-  ["NBA", "/categoria/nba"],
-  ["LIDOM", "/categoria/lidom"],
-  ["Fútbol", "/categoria/futbol"],
-  ["Loterías", "/loterias"],
+type NavLink = readonly [string, string];
+
+const sportMenus = [
+  {
+    label: "Béisbol",
+    items: [
+      ["MLB", "/categoria/mlb"],
+      ["LIDOM", "/categoria/lidom"],
+      ["Béisbol del Caribe", "/categoria/beisbol-del-caribe"],
+    ] satisfies NavLink[],
+  },
+  {
+    label: "Baloncesto",
+    items: [
+      ["NBA", "/categoria/nba"],
+      ["FIBA", "/categoria/baloncesto-fiba"],
+    ] satisfies NavLink[],
+  },
+  {
+    label: "Combate",
+    items: [
+      ["Boxeo", "/categoria/boxeo"],
+    ] satisfies NavLink[],
+  },
+  {
+    label: "Motor",
+    items: [
+      ["F1", "/categoria/formula-1"],
+      ["MotoGP", "/categoria/motogp"],
+    ] satisfies NavLink[],
+  },
 ] as const;
 
 const moreSports = [
-  ["Hockey", "/categoria/nhl"],
   ["NFL", "/categoria/nfl"],
+  ["Hockey", "/categoria/nhl"],
   ["Tenis", "/categoria/tennis"],
-  ["Caribe", "/categoria/beisbol-del-caribe"],
 ] as const;
 
 const moreSportsHref = "/categoria/otros-deportes";
 
-function MoreSportsLinks() {
+function DropdownLinks({ items, allHref, allLabel }: {
+  items: readonly NavLink[];
+  allHref?: string;
+  allLabel?: string;
+}) {
   return (
     <>
-      {moreSports.map(([label, href]) => (
+      {items.map(([label, href]) => (
         <Link key={href} href={href}>{label}</Link>
       ))}
-      <Link className="nav-dropdown-all" href={moreSportsHref}>Otros deportes</Link>
+      {allHref && allLabel ? <Link className="nav-dropdown-all" href={allHref}>{allLabel}</Link> : null}
+    </>
+  );
+}
+
+function SportMenu({
+  label,
+  items,
+  allHref,
+  allLabel,
+  alignEnd,
+}: {
+  label: string;
+  items: readonly NavLink[];
+  allHref?: string;
+  allLabel?: string;
+  alignEnd?: boolean;
+}) {
+  const menuClass = alignEnd ? "nav-more nav-more-end" : "nav-more";
+
+  return (
+    <>
+      <div className={`${menuClass} nav-more-desktop`}>
+        <span className="nav-more-trigger">
+          {label}
+          <ChevronDownIcon className="nav-icon" aria-hidden="true" />
+        </span>
+        <div className="nav-dropdown">
+          <DropdownLinks items={items} allHref={allHref} allLabel={allLabel} />
+        </div>
+      </div>
+
+      <details className={`${menuClass} nav-more-mobile`}>
+        <summary className="nav-more-trigger">
+          {label}
+          <ChevronDownIcon className="nav-icon" aria-hidden="true" />
+        </summary>
+        <div className="nav-dropdown">
+          <DropdownLinks items={items} allHref={allHref} allLabel={allLabel} />
+        </div>
+      </details>
     </>
   );
 }
@@ -44,29 +111,23 @@ export function MainNav() {
 
         <div className="nav-panel">
           <div className="nav-links">
-            {primaryNav.map(([label, href]) => (
-              <Link key={href} href={href}>{label}</Link>
+            <Link className="nav-home-desktop" href="/">Portada</Link>
+            <Link href="/categoria/nacionales">Nacionales</Link>
+
+            {sportMenus.map((sport) => (
+              <SportMenu key={sport.label} label={sport.label} items={sport.items} />
             ))}
 
-            <div className="nav-more nav-more-desktop">
-              <span className="nav-more-trigger">
-                Más deportes
-                <ChevronDownIcon className="nav-icon" aria-hidden="true" />
-              </span>
-              <div className="nav-dropdown">
-                <MoreSportsLinks />
-              </div>
-            </div>
+            <Link href="/categoria/futbol">Fútbol</Link>
+            <Link href="/loterias">Loterías</Link>
 
-            <details className="nav-more nav-more-mobile">
-              <summary className="nav-more-trigger">
-                Más deportes
-                <ChevronDownIcon className="nav-icon" aria-hidden="true" />
-              </summary>
-              <div className="nav-dropdown">
-                <MoreSportsLinks />
-              </div>
-            </details>
+            <SportMenu
+              label="Más deportes"
+              items={moreSports}
+              allHref={moreSportsHref}
+              allLabel="Otros deportes"
+              alignEnd
+            />
           </div>
 
           <div className="nav-panel-extras">

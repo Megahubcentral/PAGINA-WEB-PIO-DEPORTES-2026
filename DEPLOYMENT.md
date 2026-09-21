@@ -8,9 +8,37 @@ El portal funciona en modalidad headless: periodistas y editores crean entradas,
 2. Conservar los tipos nativos `posts`, `categories`, `tags` y `media`.
 3. Definir `WORDPRESS_API_URL=https://piod.axworkflow.com/wp-json/wp/v2` en el proveedor de hosting.
 4. Usar estos slugs de categoría para mantener la navegación automática: `nacionales`, `mlb`, `nba`, `lidom`, `futbol`, `nfl`, `tennis`, `beisbol-del-caribe` y `otros-deportes`.
-5. Crear la categoría `videos` para alimentar automáticamente el archivo Pio Play. También se reconocen las entradas publicadas con formato de WordPress `video`.
+5. Seguir la guía de Pio TV más abajo para que la videoteca de portada reciba entradas de WordPress.
 
 Si la API no responde, la portada conserva contenido editorial de respaldo y nunca queda vacía.
+
+## Pio TV — guía para el equipo de WordPress
+
+Pio TV (bloque de portada y `/videos`) **no lee la Mediateca sola**. Un `.mp4` subido a Medios no aparece hasta que forma parte de una **entrada publicada**.
+
+Una entrada entra a Pio TV si cumple **al menos una** de estas condiciones:
+
+1. Categoría con slug exacto `videos` o `video`.
+2. Etiqueta `videos` o `video`.
+3. Formato de la entrada: **Video**.
+
+El portal une esas tres fuentes, quita duplicados y ordena por fecha. La portada se actualiza cada dos minutos.
+
+### Cómo publicar un video de la biblioteca
+
+1. En WordPress: **Entradas → Categorías**. Crear `Videos` con slug `videos` (sin tilde, en minúsculas).
+2. **Entradas → Añadir nueva**.
+3. En **Formato**, elegir **Video**.
+4. Insertar el archivo desde la biblioteca (bloque Video) o un embed de YouTube.
+5. Poner título, extracto e **imagen destacada** (es la miniatura del carrusel).
+6. Asignar la categoría del deporte (`mlb`, `nacionales`, etc.) **y** la categoría o etiqueta `videos`.
+7. **Publicar**.
+
+### Qué no hacer
+
+- Subir un archivo a la Mediateca y esperar que salga solo en Pio TV.
+- Republicar highlights de MLB, NBA u otras ligas como archivo propio en el servidor. Si el dueño del material lo publica en YouTube, usar el reproductor incrustado del canal oficial y acreditar la fuente.
+- Dejar el video sin imagen destacada: el carrusel mostrará un respaldo genérico.
 
 ## Instagram de Pio Deportes
 
