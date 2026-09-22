@@ -12,7 +12,7 @@ import { ScoreStrip } from "./components/Scoreboard";
 import { VideoCarousel } from "./components/VideoCarousel";
 import { LotteryCompact } from "./components/LotteryCompact";
 import { InstagramFeed } from "./components/InstagramFeed";
-import { getArticlesByTag, getCategoryArticles, getVideoItems, homeNewsQuery, sortByNewest, type Article } from "../lib/wordpress";
+import { getArticlesByTag, getCategoryArticles, getVideoItems, homeNewsQuery, PORTADA_TAGS, sortByNewest, type Article } from "../lib/wordpress";
 import { getLotteryFeed } from "../lib/lottery-provider";
 import { getInstagramFeed } from "../lib/instagram-provider";
 
@@ -94,7 +94,9 @@ function HomeAdSense({ unit }: { unit: (typeof HOME_ADSENSE)[keyof typeof HOME_A
 export default async function Home() {
   const nbaQuery = { ...homeNewsQuery, exactCategory: true };
   const [
-    portadaArticles,
+    portadaHeroArticles,
+    portadaBelowArticles,
+    portadaSideArticles,
     destacadosArticles,
     videos,
     nationalArticles,
@@ -110,7 +112,9 @@ export default async function Home() {
     lotteryFeed,
     instagramFeed,
   ] = await Promise.all([
-    getArticlesByTag("portada", 5),
+    getArticlesByTag(PORTADA_TAGS.hero, 1, { fallbackToLatest: false }),
+    getArticlesByTag(PORTADA_TAGS.below, 2, { fallbackToLatest: false }),
+    getArticlesByTag(PORTADA_TAGS.side, 2, { fallbackToLatest: false }),
     getArticlesByTag("destacados", 8, homeNewsQuery),
     getVideoItems(6),
     getCategoryArticles("nacionales", homeNewsQuery),
@@ -128,10 +132,9 @@ export default async function Home() {
   ]);
 
   const usedArticles = new Set<string>();
-  const topStories = takeUnique(portadaArticles, 5, usedArticles);
-  const hero = topStories[0];
-  const sideStories = topStories.slice(1, 3);
-  const moreStories = topStories.slice(3, 5);
+  const hero = takeUnique(portadaHeroArticles, 1, usedArticles)[0];
+  const sideStories = takeUnique(portadaSideArticles, 2, usedArticles);
+  const moreStories = takeUnique(portadaBelowArticles, 2, usedArticles);
   const latest = takeUnique(destacadosArticles, 4, usedArticles);
   const lidomStories = takeUnique(lidomArticles, 5, usedArticles);
   const mlbStories = takeUnique(mlbArticles, 5, usedArticles);
@@ -155,10 +158,11 @@ export default async function Home() {
 
         <section className="shell lead-section">
           <div className="lead-label"><span /> Portada</div>
-          {hero ? (
+          {hero || sideStories.length || moreStories.length ? (
           <div className="lead-grid">
             <div className="lead-main">
               <div className="lead-top">
+                {hero ? (
                 <article className="hero-story">
                   <Link className="hero-media" href={`/noticias/${hero.slug}`}>
                     <img src={hero.image} alt="" fetchPriority="high" />
@@ -171,12 +175,15 @@ export default async function Home() {
                     {hero.media ? <span className="hero-play">▶</span> : null}
                   </Link>
                 </article>
+                ) : null}
 
+                {sideStories.length ? (
                 <div className="side-stories">
                   {sideStories.map((article) => (
                     <ArticleCard key={article.id} article={article} compact />
                   ))}
                 </div>
+                ) : null}
               </div>
 
               {moreStories.length ? (
@@ -266,7 +273,7 @@ export default async function Home() {
 
         <HomeFeatureBlock
           kicker="Juego internacional"
-          title="Fútbol"
+          title="Fútbol (Soccer)"
           href="/categoria/futbol"
           articles={footballStories}
           reverse

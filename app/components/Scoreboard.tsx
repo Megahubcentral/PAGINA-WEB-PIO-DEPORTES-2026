@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import {
   fallbackSportsFeed,
   orderGamesByState,
+  sportLabel,
   type Game,
   type ScheduleDay,
   type SportsFeed,
@@ -96,7 +97,7 @@ export function ScoreStrip() {
             key={game.id}
           >
             <div className="score-top">
-              <span>{game.sport}</span>
+              <span>{sportLabel(game.sport)}</span>
               <small className={game.state === "live" ? "score-live" : ""}>
                 {game.state === "live" ? <i /> : null}{stateLabel(game)}
               </small>
@@ -150,11 +151,11 @@ function ResultCards({ games }: { games: Game[] }) {
       {games.map((game) => (
         <article className={`result-card is-${game.state}`} id={game.id} key={game.id}>
           <div className="result-card-head">
-            <span>{game.sport}</span>
+            <span>{sportLabel(game.sport)}</span>
             <strong>{game.state === "live" ? <i /> : null}{stateLabel(game)}</strong>
           </div>
           <div className="result-competition">
-            <strong>{game.competition || game.sport}</strong>
+            <strong>{game.competition || sportLabel(game.sport)}</strong>
             <span>{[
               game.stage,
               game.season ? `Temporada ${game.season}` : "",
@@ -223,7 +224,7 @@ export function ScoresHub() {
         </div>
         <div className="score-filters" role="group" aria-label="Filtrar marcadores por deporte">
           {filters.map((item) => (
-            <button key={item} type="button" className={filter === item ? "active" : ""} onClick={() => setFilter(item)}>{item}</button>
+            <button key={item} type="button" className={filter === item ? "active" : ""} onClick={() => setFilter(item)}>{sportLabel(item)}</button>
           ))}
         </div>
         <div className={`scores-data-status is-${feed.source}`}>
@@ -259,7 +260,7 @@ export function ScoresHub() {
           <div className="discipline-schedule-grid">
             {visibleSports.map((sport) => (
               <section className="discipline-schedule" key={sport}>
-                <header><span>{sport}</span><small>{visibleSchedule.filter((event) => event.sport === sport).length} eventos</small></header>
+                <header><span>{sportLabel(sport)}</span><small>{visibleSchedule.filter((event) => event.sport === sport).length} eventos</small></header>
                 {visibleSchedule.filter((event) => event.sport === sport).map((event) => (
                   <article id={event.id} key={event.id}>
                     <div className="schedule-date"><strong>{event.time}</strong><small>{event.date}</small></div>

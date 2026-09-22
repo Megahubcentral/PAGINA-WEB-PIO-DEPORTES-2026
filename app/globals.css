@@ -107,6 +107,8 @@ button, input, select, textarea { font: inherit; }
 .lead-main { display: grid; gap: 22px; min-width: 0; }
 .lead-aside { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 .lead-top { display: grid; grid-template-columns: minmax(0, 1.75fr) minmax(240px, .8fr); gap: 22px; }
+.lead-top:not(:has(.side-stories)),
+.lead-top:not(:has(.hero-story)) { grid-template-columns: 1fr; }
 .lead-more { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
 .lead-more .article-card.compact { border-bottom: 0; padding-bottom: 0; }
 .hero-story { min-width: 0; }
@@ -429,12 +431,37 @@ button, input, select, textarea { font: inherit; }
 .more-sports-grid .story-meta { margin-top: auto; padding-top: 12px; }
 
 .site-footer { background: #08090b; color: #c5c7cc; border-top: 6px solid var(--red); }
-.footer-grid { display: grid; grid-template-columns: 1.35fr .65fr .65fr 1.15fr; gap: 54px; padding: 58px 0 50px; }
+.footer-grid { display: grid; grid-template-columns: 1.35fr .75fr .65fr 1.15fr; gap: 54px; padding: 58px 0 50px; }
 .footer-brand img { width: 190px; height: 82px; object-fit: contain; object-position: left center; margin-bottom: 20px; }
 .footer-brand p, .newsletter p { max-width: 315px; font-size: 12px; line-height: 1.65; color: #8f9298; }
 .footer-grid h3 { margin: 0 0 18px; color: white; text-transform: uppercase; font-family: var(--display); font-size: 16px; letter-spacing: .03em; }
-.footer-grid > div:not(.footer-brand):not(.newsletter) a { display: block; margin: 12px 0; color: #96999f; font-size: 12px; }
+.footer-grid > div:not(.footer-brand):not(.newsletter) a,
+.footer-sections a { display: block; margin: 10px 0; color: #96999f; font-size: 12px; }
 .footer-grid a:hover { color: white; }
+.footer-sport { margin: 10px 0; }
+.footer-sport summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  list-style: none;
+  cursor: pointer;
+  color: #96999f;
+  font-size: 12px;
+}
+.footer-sport summary::-webkit-details-marker,
+.footer-sport summary::marker { display: none; content: ""; }
+.footer-sport summary:hover,
+.footer-sport[open] summary { color: white; }
+.footer-sections .footer-sport-icon {
+  width: 14px;
+  height: 14px;
+  max-width: 14px;
+  max-height: 14px;
+  flex: 0 0 14px;
+}
+.footer-sport[open] .footer-sport-icon { transform: rotate(180deg); }
+.footer-sport-leagues { padding: 2px 0 2px 14px; }
+.footer-sport-leagues a { margin: 8px 0; font-size: 11px; }
 .newsletter-form { display: flex; height: 43px; border-bottom: 1px solid #4b4d52; margin-top: 18px; }
 .newsletter-form input { min-width: 0; flex: 1; color: white; background: transparent; border: 0; outline: 0; }
 .newsletter-form button { color: white; background: var(--red); border: 0; padding: 0 16px; font-size: 10px; text-transform: uppercase; font-weight: 900; cursor: pointer; }

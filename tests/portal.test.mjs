@@ -46,7 +46,7 @@ test("the portal includes its core editorial surfaces", async () => {
   assert.ok(page.indexOf("HOME_ADSENSE.afterMlb") < page.indexOf('title="Baloncesto"'));
   assert.ok(page.indexOf('title="Baloncesto"') < page.indexOf('title="Nacionales"'));
   assert.ok(page.indexOf("aesDominicanaWideAd") < page.indexOf('title="Pio TV"'));
-  assert.ok(page.indexOf('title="Pio TV"') < page.indexOf('title="Fútbol"'));
+  assert.ok(page.indexOf('title="Pio TV"') < page.indexOf('title="Fútbol (Soccer)"'));
   assert.ok(page.indexOf("HOME_ADSENSE.afterFutbol") < page.indexOf('title="NFL"'));
   assert.ok(page.indexOf('title="NFL"') < page.indexOf('title="NHL"'));
   assert.ok(page.indexOf("HOME_ADSENSE.lower") < page.indexOf("<LotteryCompact"));
@@ -55,8 +55,13 @@ test("the portal includes its core editorial surfaces", async () => {
   assert.doesNotMatch(page, /getInternationalArticles\(5, homeNewsQuery\)/);
   assert.match(page, /homeNewsQuery/);
   assert.match(page, /getArticlesByTag\("destacados", 8, homeNewsQuery\)/);
-  assert.match(page, /getArticlesByTag\("portada", 5\)/);
-  assert.match(wordpress, /excludeTags: \["portada"\]/);
+  assert.match(page, /PORTADA_TAGS\.hero/);
+  assert.match(page, /PORTADA_TAGS\.below/);
+  assert.match(page, /PORTADA_TAGS\.side/);
+  assert.match(wordpress, /hero: "portada"/);
+  assert.match(wordpress, /below: "portada-2"/);
+  assert.match(wordpress, /side: "portada-3"/);
+  assert.match(wordpress, /excludeTags: \[\.\.\.portadaTagSlugs\]/);
   assert.match(wordpress, /tags_exclude/);
   assert.match(category, /getCategoryArticles\(slug\)/);
   assert.match(category, /getInternationalArticlePage/);

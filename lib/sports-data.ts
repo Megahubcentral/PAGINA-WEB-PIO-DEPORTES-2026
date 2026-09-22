@@ -1,5 +1,9 @@
 export type Sport = "MLB" | "LIDOM" | "NBA" | "Baloncesto RD" | "NFL" | "Fútbol" | "Hockey" | "Voleibol" | "Tenis";
 
+export function sportLabel(sport: string) {
+  return sport === "Fútbol" ? "Fútbol (Soccer)" : sport;
+}
+
 export type GameState = "live" | "finished" | "upcoming";
 
 export type GameIncident = {
@@ -72,7 +76,7 @@ export const fallbackSchedule: ScheduleEvent[] = [
   { id: "sea-bos", sport: "MLB", day: "Hoy", date: "13 AGO", time: "8:10 PM", away: "Mariners", awayLogo: "https://www.mlbstatic.com/team-logos/136.svg", home: "Red Sox", homeLogo: "https://www.mlbstatic.com/team-logos/111.svg", competition: "MLB · Temporada regular", venue: "Fenway Park", channel: "ESPN" },
   { id: "lal-mia-next", sport: "NBA", day: "Hoy", date: "13 AGO", time: "9:30 PM", away: "Lakers", awayLogo: "https://a.espncdn.com/i/teamlogos/nba/500/lal.png", home: "Heat", homeLogo: "https://a.espncdn.com/i/teamlogos/nba/500/mia.png", competition: "NBA · Pretemporada", venue: "Kaseya Center", channel: "League Pass" },
   { id: "lic-agui-next", sport: "LIDOM", day: "Hoy", date: "13 AGO", time: "7:30 PM", away: "Licey", home: "Águilas", competition: "LIDOM · Temporada regular", venue: "Estadio Quisqueya", channel: "Pío TV" },
-  { id: "rma-bar-next", sport: "Fútbol", day: "Hoy", date: "13 AGO", time: "3:00 PM", away: "Real Madrid", home: "Barcelona", competition: "Fútbol · Copa internacional", venue: "Santiago Bernabéu", channel: "ESPN Deportes" },
+  { id: "rma-bar-next", sport: "Fútbol", day: "Hoy", date: "13 AGO", time: "3:00 PM", away: "Real Madrid", home: "Barcelona", competition: "Fútbol (Soccer) · Copa internacional", venue: "Santiago Bernabéu", channel: "ESPN Deportes" },
   { id: "reinas-pur", sport: "Voleibol", day: "Hoy", date: "13 AGO", time: "8:00 PM", away: "R. Dominicana", home: "Puerto Rico", competition: "Voleibol · Copa Panamericana", venue: "Palacio del Voleibol", channel: "Pío TV" },
   { id: "toronto-semi", sport: "Tenis", day: "Hoy", date: "13 AGO", time: "6:00 PM", away: "Rybakina", home: "Gauff", competition: "WTA · Semifinal", venue: "Centre Court", channel: "Tennis Channel" },
   { id: "chc-cin", sport: "MLB", day: "Mañana", date: "14 AGO", time: "7:10 PM", away: "Cubs", awayLogo: "https://www.mlbstatic.com/team-logos/112.svg", home: "Reds", homeLogo: "https://www.mlbstatic.com/team-logos/113.svg", competition: "MLB · Temporada regular", venue: "Great American Ball Park", channel: "MLB.TV" },

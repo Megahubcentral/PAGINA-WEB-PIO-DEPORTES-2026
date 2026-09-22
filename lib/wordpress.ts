@@ -188,7 +188,7 @@ export const fallbackArticles: Article[] = [
     title: "Holanda ficha a Xavi, su primer técnico extranjero desde 1978",
     excerpt:
       "La selección neerlandesa apuesta por una nueva idea de juego de cara al próximo gran ciclo internacional.",
-    category: "Fútbol",
+    category: "Fútbol (Soccer)",
     categorySlug: "futbol",
     categorySlugs: ["futbol"],
     image: "/news/futbol.jpg",
@@ -311,7 +311,7 @@ const localCategoryProfiles: Record<string, { category: string; image: string; t
     ],
   },
   futbol: {
-    category: "Fútbol",
+    category: "Fútbol (Soccer)",
     image: "/news/futbol.jpg",
     titles: [
       "La carrera por Europa comienza con nuevos proyectos y viejas ambiciones",
@@ -547,6 +547,11 @@ function resolveCategorySlug(slug: string) {
   return categorySlugAliases[slug] ?? slug;
 }
 
+export function displayCategoryName(name = "", slug = "") {
+  if (resolveCategorySlug(slug).toLowerCase() === "futbol") return "Fútbol (Soccer)";
+  return name;
+}
+
 type WpTerm = { taxonomy?: string; name?: string; slug?: string };
 type WpPost = {
   id: number;
@@ -690,7 +695,7 @@ function normalizePost(post: WpPost): Article {
     slug: post.slug,
     title,
     excerpt: plainText(post.excerpt?.rendered),
-    category: decodeHtmlEntities(category?.name ?? "Actualidad"),
+    category: displayCategoryName(decodeHtmlEntities(category?.name ?? "Actualidad"), category?.slug ?? "actualidad"),
     categorySlug: resolveCategorySlug(category?.slug ?? "actualidad"),
     categorySlugs,
     tags: articleTagSlugs(terms),
@@ -806,15 +811,27 @@ type WpTermRecord = { id: number; slug?: string; name?: string };
 export type ArticleQueryOptions = {
   excludeTags?: string[];
   exactCategory?: boolean;
+  fallbackToLatest?: boolean;
 };
 
-export const homeNewsQuery: ArticleQueryOptions = { excludeTags: ["portada"] };
+/** WordPress slugs for the three Portada blocks (names: Portada B-1 / B-2 / B-3). */
+export const PORTADA_TAGS = {
+  hero: "portada",
+  below: "portada-2",
+  side: "portada-3",
+} as const;
+
+export const portadaTagSlugs = [PORTADA_TAGS.hero, PORTADA_TAGS.below, PORTADA_TAGS.side];
+
+export const homeNewsQuery: ArticleQueryOptions = { excludeTags: [...portadaTagSlugs] };
 
 async function getTagIdsBySlug(slugs: string[]) {
   const unique = [...new Set(slugs.map((slug) => slug.trim()).filter(Boolean))];
   if (!unique.length) return [];
-  const terms = await wpFetch(`/tags?slug=${encodeURIComponent(unique.join(","))}`) as WpTermRecord[] | null;
-  return (terms ?? []).map((term) => term.id).filter(Boolean);
+  const batches = await Promise.all(
+    unique.map((slug) => wpFetch(`/tags?slug=${encodeURIComponent(slug)}`) as Promise<WpTermRecord[] | null>),
+  );
+  return [...new Set(batches.flatMap((terms) => (terms ?? []).map((term) => term.id).filter(Boolean)))];
 }
 
 async function tagExcludeQuery(options?: ArticleQueryOptions) {
@@ -898,10 +915,12 @@ export async function getArticlesByTag(slug: string, limit = 9, options?: Articl
         `/posts?tags=${tagIds}&per_page=${limit}&orderby=date&order=desc${excludeQuery}&${embedQuery}`,
       ) as WpPost[] | null;
       if (posts?.length) return sortArticlesByNewest(withoutExcludedTags(posts.map(normalizePost), options));
+      if (options?.fallbackToLatest === false) return [];
     }
   } catch {
-    // Fall through to the latest-news backup below.
+    if (options?.fallbackToLatest === false) return [];
   }
+  if (options?.fallbackToLatest === false) return [];
   return withoutExcludedTags(await getLatestArticles(limit), options);
 }
 

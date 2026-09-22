@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { Bars3Icon, ChevronDownIcon, XMarkIcon } from "@heroicons/react/24/outline";
 
-type NavLink = readonly [string, string];
+export type NavLink = readonly [string, string];
 
-const sportMenus = [
+export const sportMenus = [
   {
     label: "Béisbol",
     items: [
@@ -34,13 +34,13 @@ const sportMenus = [
   },
 ] as const;
 
-const moreSports = [
+export const moreSports = [
   ["NFL", "/categoria/nfl"],
   ["Hockey", "/categoria/nhl"],
   ["Tenis", "/categoria/tennis"],
 ] as const;
 
-const moreSportsHref = "/categoria/otros-deportes";
+export const moreSportsHref = "/categoria/otros-deportes";
 
 function DropdownLinks({ items, allHref, allLabel }: {
   items: readonly NavLink[];

@@ -4,7 +4,8 @@ import { getLatestArticles, type Article } from "../../lib/wordpress";
 import { PushNotificationButton } from "./Engagement";
 import { AdSlot, BreakingTicker, CurrentDate, LiveInfo, NewsletterForm } from "./LiveWidgets";
 import { cometaHeaderAd } from "../../lib/direct-ads";
-import { MainNav } from "./MainNav";
+import { ChevronDownIcon } from "@heroicons/react/24/outline";
+import { MainNav, moreSports, moreSportsHref, sportMenus, type NavLink } from "./MainNav";
 
 export async function SiteHeader() {
   const breakingHeadlines = (await getLatestArticles(20)).slice(0, 20).map((article) => ({
@@ -96,6 +97,33 @@ export function SectionHeading({ kicker, title, href }: { kicker?: string; title
   );
 }
 
+function FooterSportMenu({
+  label,
+  items,
+  allHref,
+  allLabel,
+}: {
+  label: string;
+  items: readonly NavLink[];
+  allHref?: string;
+  allLabel?: string;
+}) {
+  return (
+    <details className="footer-sport">
+      <summary>
+        {label}
+        <ChevronDownIcon className="footer-sport-icon" width={14} height={14} aria-hidden="true" />
+      </summary>
+      <div className="footer-sport-leagues">
+        {items.map(([itemLabel, href]) => (
+          <Link key={href} href={href}>{itemLabel}</Link>
+        ))}
+        {allHref && allLabel ? <Link href={allHref}>{allLabel}</Link> : null}
+      </div>
+    </details>
+  );
+}
+
 export function SiteFooter() {
   return (
     <footer className="site-footer" id="contacto">
@@ -104,25 +132,22 @@ export function SiteFooter() {
           <img src="/pio-logo-white.png" alt="Pío Deportes" width="190" height="95" />
           <p>El deporte vive aquí. Noticias dominicanas e internacionales con rigor, pasión y velocidad.</p>
         </div>
-        <div>
+        <nav className="footer-sections" aria-label="Secciones">
           <h3>Secciones</h3>
           <Link href="/categoria/nacionales">Nacionales</Link>
           <Link href="/categoria/internacional">Internacional</Link>
-          <Link href="/categoria/mlb">MLB</Link>
-          <Link href="/categoria/lidom">LIDOM</Link>
-          <Link href="/categoria/beisbol-del-caribe">Béisbol del Caribe</Link>
-          <Link href="/categoria/nba">NBA</Link>
-          <Link href="/categoria/baloncesto-fiba">FIBA</Link>
-          <Link href="/categoria/futbol">Fútbol</Link>
-          <Link href="/categoria/boxeo">Boxeo</Link>
-          <Link href="/categoria/formula-1">Fórmula 1</Link>
-          <Link href="/categoria/motogp">MotoGP</Link>
-          <Link href="/categoria/nfl">NFL</Link>
-          <Link href="/categoria/nhl">NHL</Link>
-          <Link href="/categoria/tennis">Tenis</Link>
-          <Link href="/categoria/otros-deportes">Más deportes</Link>
+          {sportMenus.map((sport) => (
+            <FooterSportMenu key={sport.label} label={sport.label} items={sport.items} />
+          ))}
+          <Link href="/categoria/futbol">Fútbol (Soccer)</Link>
           <Link href="/loterias">Loterías</Link>
-        </div>
+          <FooterSportMenu
+            label="Más deportes"
+            items={moreSports}
+            allHref={moreSportsHref}
+            allLabel="Otros deportes"
+          />
+        </nav>
         <div>
           <h3>Pío Deportes</h3>
           <Link href="/#radio">Radio en vivo</Link>
