@@ -5,7 +5,7 @@ import { PushNotificationButton } from "./Engagement";
 import { AdSlot, BreakingTicker, CurrentDate, LiveInfo, NewsletterForm } from "./LiveWidgets";
 import { cometaHeaderAd } from "../../lib/direct-ads";
 import { ChevronDownIcon } from "@heroicons/react/24/outline";
-import { getNavTree, navItemLinks } from "../../lib/nav-tree";
+import { getNavTree, navItemLinks, type NavLink } from "../../lib/nav-tree";
 import { MainNav } from "./MainNav";
 
 export async function SiteHeader() {

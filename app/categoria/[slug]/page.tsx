@@ -37,7 +37,6 @@ const profiles: Record<string, { title: string; label: string; description: stri
   tennis: { title: "Tenis", label: "Circuito mundial", description: "Grand Slams, rankings y protagonistas de los principales circuitos profesionales.", code: "TENIS" },
   tenis: { title: "Tenis", label: "Circuito mundial", description: "Grand Slams, rankings y protagonistas de los principales circuitos profesionales.", code: "TENIS" },
   voleibol: { title: "Voleibol", label: "Cancha y selección", description: "La actualidad de las selecciones dominicanas y de las principales competencias internacionales.", code: "VÓLEY" },
-  "beisbol-del-caribe": { title: "Béisbol del Caribe", label: "Béisbol · Caribe", description: "Ligas, series y protagonistas del béisbol profesional de nuestra región.", code: "CARIBE" },
   boxeo: { title: "Boxeo", label: "Combate · Boxeo", description: "Peleas, títulos y figuras del boxeo dominicano e internacional.", code: "BOXEO" },
   "formula-1": { title: "Fórmula 1", label: "Automovilismo · F1", description: "Calendario, equipos y protagonistas del Mundial de Fórmula 1.", code: "F1" },
   motogp: { title: "MotoGP", label: "Automovilismo · MotoGP", description: "La actualidad del Mundial de Motociclismo, con carreras, figuras y el pulso de cada Gran Premio.", code: "MOTOGP" },
