@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { editorialImageBank, type EditorialImage } from "./editorial-images";
 
 export type Article = {
@@ -516,21 +517,32 @@ const apiBase = (process.env.WORDPRESS_API_URL || "https://piod.axworkflow.com/w
 export const wordpressCategorySlugs = [
   "nacionales",
   "internacional",
+  "beisbol",
   "mlb",
-  "nba",
+  "lidom",
+  "beisbol-latino",
   "baloncesto",
+  "nba",
   "ncaab",
+  "wnba",
   "baloncesto-fiba",
   "liga-nacional-de-baloncesto",
-  "lidom",
-  "futbol",
-  "nfl",
-  "nhl",
-  "tennis",
-  "beisbol-del-caribe",
+  "combate",
   "boxeo",
+  "automovilismo",
   "formula-1",
   "motogp",
+  "futbol",
+  "futbol-soccer",
+  "nfl",
+  "ncaaf",
+  "ldf",
+  "mls",
+  "mundial-fifa-usa-can-mex-2026",
+  "nhl",
+  "tennis",
+  "atletismo",
+  "juegos-olimpicos",
   "otros-deportes",
 ] as const;
 
@@ -541,6 +553,8 @@ const categorySlugAliases: Record<string, string> = {
   f1: "formula-1",
   formula1: "formula-1",
   "moto-gp": "motogp",
+  motor: "automovilismo",
+  "beisbol-del-caribe": "beisbol-latino",
 };
 
 function resolveCategorySlug(slug: string) {
@@ -548,8 +562,48 @@ function resolveCategorySlug(slug: string) {
 }
 
 export function displayCategoryName(name = "", slug = "") {
-  if (resolveCategorySlug(slug).toLowerCase() === "futbol") return "Fútbol (Soccer)";
+  const resolved = resolveCategorySlug(slug).toLowerCase();
+  if (resolved === "futbol-soccer") return "Fútbol (Soccer)";
+  if (resolved === "futbol") return "Fútbol";
   return name;
+}
+
+export type WordpressCategory = {
+  id: number;
+  slug: string;
+  name: string;
+  parent: number;
+  count: number;
+};
+
+export const getWordpressCategories = cache(async function getWordpressCategories(): Promise<WordpressCategory[]> {
+  try {
+    const categories = await wpFetch("/categories?per_page=100&hide_empty=false") as Array<{
+      id?: number;
+      slug?: string;
+      name?: string;
+      parent?: number;
+      count?: number;
+    }> | null;
+    return (categories ?? [])
+      .filter((category): category is { id: number; slug: string; name?: string; parent?: number; count?: number } => (
+        Boolean(category.id && category.slug)
+      ))
+      .map((category) => ({
+        id: category.id,
+        slug: category.slug,
+        name: category.name ?? category.slug,
+        parent: category.parent ?? 0,
+        count: category.count ?? 0,
+      }));
+  } catch {
+    return [];
+  }
+});
+
+function descendantCategoryIds(categories: WordpressCategory[], parentId: number): number[] {
+  const children = categories.filter((category) => category.parent === parentId);
+  return [parentId, ...children.flatMap((child) => descendantCategoryIds(categories, child.id))];
 }
 
 type WpTerm = { taxonomy?: string; name?: string; slug?: string };
@@ -1145,12 +1199,16 @@ export async function getCategoryArticles(slug: string, options?: ArticleQueryOp
 
   try {
     const [categories, excludeQuery] = await Promise.all([
-      wpFetch(`/categories?slug=${encodeURIComponent(resolvedSlug)}`),
+      getWordpressCategories(),
       tagExcludeQuery(options),
     ]);
-    if (categories?.[0]) {
+    const match = categories.find((category) => category.slug.toLowerCase() === resolvedSlug.toLowerCase());
+    const categoryIds = match
+      ? (options?.exactCategory ? [match.id] : descendantCategoryIds(categories, match.id))
+      : [];
+    if (categoryIds.length) {
       const posts = await wpFetch(
-        `/posts?categories=${categories[0].id}&per_page=${articlesPerCategory}&orderby=date&order=desc${excludeQuery}&${embedQuery}`,
+        `/posts?categories=${categoryIds.join(",")}&per_page=${articlesPerCategory}&orderby=date&order=desc${excludeQuery}&${embedQuery}`,
       );
       if (posts?.length) {
         const normalized = withoutExcludedTags(posts.map(normalizePost), options);

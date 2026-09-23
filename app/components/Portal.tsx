@@ -5,7 +5,8 @@ import { PushNotificationButton } from "./Engagement";
 import { AdSlot, BreakingTicker, CurrentDate, LiveInfo, NewsletterForm } from "./LiveWidgets";
 import { cometaHeaderAd } from "../../lib/direct-ads";
 import { ChevronDownIcon } from "@heroicons/react/24/outline";
-import { MainNav, moreSports, moreSportsHref, sportMenus, type NavLink } from "./MainNav";
+import { getNavTree, navItemLinks } from "../../lib/nav-tree";
+import { MainNav } from "./MainNav";
 
 export async function SiteHeader() {
   const breakingHeadlines = (await getLatestArticles(20)).slice(0, 20).map((article) => ({
@@ -115,7 +116,7 @@ function FooterSportMenu({
         <ChevronDownIcon className="footer-sport-icon" width={14} height={14} aria-hidden="true" />
       </summary>
       <div className="footer-sport-leagues">
-        {items.map(([itemLabel, href]) => (
+        {items.filter(([, href]) => href !== allHref).map(([itemLabel, href]) => (
           <Link key={href} href={href}>{itemLabel}</Link>
         ))}
         {allHref && allLabel ? <Link href={allHref}>{allLabel}</Link> : null}
@@ -124,7 +125,9 @@ function FooterSportMenu({
   );
 }
 
-export function SiteFooter() {
+export async function SiteFooter() {
+  const nav = await getNavTree();
+
   return (
     <footer className="site-footer" id="contacto">
       <div className="shell footer-grid">
@@ -136,15 +139,18 @@ export function SiteFooter() {
           <h3>Secciones</h3>
           <Link href="/categoria/nacionales">Nacionales</Link>
           <Link href="/categoria/internacional">Internacional</Link>
-          {sportMenus.map((sport) => (
-            <FooterSportMenu key={sport.label} label={sport.label} items={sport.items} />
+          {nav.primary.map((sport) => (
+            <FooterSportMenu
+              key={sport.slug}
+              label={sport.label}
+              items={navItemLinks(sport.children.length ? sport.children : [sport])}
+            />
           ))}
-          <Link href="/categoria/futbol">Fútbol (Soccer)</Link>
           <Link href="/loterias">Loterías</Link>
           <FooterSportMenu
             label="Más deportes"
-            items={moreSports}
-            allHref={moreSportsHref}
+            items={navItemLinks(nav.moreSports)}
+            allHref={nav.moreSportsHref}
             allLabel="Otros deportes"
           />
         </nav>

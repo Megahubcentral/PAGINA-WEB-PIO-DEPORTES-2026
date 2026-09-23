@@ -34,7 +34,7 @@ test("the portal includes its core editorial surfaces", async () => {
   assert.match(page, /getCategoryArticles\("mlb", homeNewsQuery\)/);
   assert.match(page, /getCategoryArticles\("nba", nbaQuery\)/);
   assert.match(page, /getCategoryArticles\("lidom", homeNewsQuery\)/);
-  assert.match(page, /getCategoryArticles\("futbol", homeNewsQuery\)/);
+  assert.match(page, /getCategoryArticles\("futbol-soccer", homeNewsQuery\)/);
   assert.match(page, /getCategoryArticles\("nfl", homeNewsQuery\)/);
   assert.match(page, /getCategoryArticles\("nhl", homeNewsQuery\)/);
   assert.match(page, /sortByNewest/);
@@ -188,7 +188,7 @@ test("free sports providers are server-side, cached and deployment ready", async
 });
 
 test("lottery and horse-racing results use scheduled server-side sources and include the required disclaimer", async () => {
-  const [provider, horseProvider, route, revalidateRoute, horseRoute, page, home, hub, compact, lotteryFeedHook, view, horseHub, brands, navigation, styles, vercel, environment, deployment] = await Promise.all([
+  const [provider, horseProvider, route, revalidateRoute, horseRoute, page, home, hub, compact, lotteryFeedHook, view, horseHub, brands, navigation, navTree, styles, vercel, environment, deployment] = await Promise.all([
     readFile(new URL("lib/lottery-provider.ts", root), "utf8"),
     readFile(new URL("lib/horse-racing-provider.ts", root), "utf8"),
     readFile(new URL("app/api/lotteries/route.ts", root), "utf8"),
@@ -203,6 +203,7 @@ test("lottery and horse-racing results use scheduled server-side sources and inc
     readFile(new URL("app/components/HorseRacingHub.tsx", root), "utf8"),
     readFile(new URL("lib/lottery-brand.ts", root), "utf8"),
     readFile(new URL("app/components/MainNav.tsx", root), "utf8"),
+    readFile(new URL("lib/nav-tree.ts", root), "utf8"),
     readFile(new URL("app/globals.css", root), "utf8"),
     readFile(new URL("vercel.json", root), "utf8"),
     readFile(new URL(".env.example", root), "utf8"),
@@ -280,15 +281,18 @@ test("lottery and horse-racing results use scheduled server-side sources and inc
   assert.match(horseHub, /Resultados de carreras/);
   assert.match(horseHub, /Comprobar jornada oficial/);
   assert.match(brands, /lotteryMonogram/);
-  assert.match(navigation, /label: "Béisbol"/);
-  assert.match(navigation, /label: "Baloncesto"/);
-  assert.match(navigation, /label: "Combate"/);
-  assert.match(navigation, /label: "Motor"/);
-  assert.match(navigation, /\["Boxeo", "\/categoria\/boxeo"\]/);
-  assert.match(navigation, /\["F1", "\/categoria\/formula-1"\]/);
-  assert.match(navigation, /\["MotoGP", "\/categoria\/motogp"\]/);
-  assert.doesNotMatch(navigation, /["']MMA["']|["']UFC["']|\/categoria\/mma|\/categoria\/ufc/);
+  assert.match(navigation, /getNavTree\(\)/);
   assert.match(navigation, /href="\/loterias"/);
+  assert.match(navTree, /"beisbol"/);
+  assert.match(navTree, /"baloncesto"/);
+  assert.match(navTree, /"combate"/);
+  assert.match(navTree, /"automovilismo"/);
+  assert.match(navTree, /"futbol"/);
+  assert.match(navTree, /futbol-soccer/);
+  assert.match(navTree, /NAV_HIDDEN_SLUGS/);
+  assert.match(navTree, /"mma"/);
+  assert.match(navTree, /"ufc"/);
+  assert.doesNotMatch(navigation, /["']MMA["']|["']UFC["']|\/categoria\/mma|\/categoria\/ufc/);
   assert.match(styles, /\.lottery-results-grid/);
   assert.match(styles, /\.lottery-board/);
   assert.match(styles, /\.lottery-quiniela/);

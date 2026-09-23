@@ -1,46 +1,8 @@
 import Link from "next/link";
 import { Bars3Icon, ChevronDownIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { getNavTree, navItemLinks, type NavItem, type NavLink } from "../../lib/nav-tree";
 
-export type NavLink = readonly [string, string];
-
-export const sportMenus = [
-  {
-    label: "Béisbol",
-    items: [
-      ["MLB", "/categoria/mlb"],
-      ["LIDOM", "/categoria/lidom"],
-      ["Béisbol del Caribe", "/categoria/beisbol-del-caribe"],
-    ] satisfies NavLink[],
-  },
-  {
-    label: "Baloncesto",
-    items: [
-      ["NBA", "/categoria/nba"],
-      ["FIBA", "/categoria/baloncesto-fiba"],
-    ] satisfies NavLink[],
-  },
-  {
-    label: "Combate",
-    items: [
-      ["Boxeo", "/categoria/boxeo"],
-    ] satisfies NavLink[],
-  },
-  {
-    label: "Motor",
-    items: [
-      ["F1", "/categoria/formula-1"],
-      ["MotoGP", "/categoria/motogp"],
-    ] satisfies NavLink[],
-  },
-] as const;
-
-export const moreSports = [
-  ["NFL", "/categoria/nfl"],
-  ["Hockey", "/categoria/nhl"],
-  ["Tenis", "/categoria/tennis"],
-] as const;
-
-export const moreSportsHref = "/categoria/otros-deportes";
+export type { NavLink };
 
 function DropdownLinks({ items, allHref, allLabel }: {
   items: readonly NavLink[];
@@ -49,7 +11,7 @@ function DropdownLinks({ items, allHref, allLabel }: {
 }) {
   return (
     <>
-      {items.map(([label, href]) => (
+      {items.filter(([, href]) => href !== allHref).map(([label, href]) => (
         <Link key={href} href={href}>{label}</Link>
       ))}
       {allHref && allLabel ? <Link className="nav-dropdown-all" href={allHref}>{allLabel}</Link> : null}
@@ -97,7 +59,24 @@ function SportMenu({
   );
 }
 
-export function MainNav() {
+function SportNavItem({ sport }: { sport: NavItem }) {
+  if (!sport.children.length) {
+    return <Link href={sport.href}>{sport.label}</Link>;
+  }
+
+  return (
+    <SportMenu
+      label={sport.label}
+      items={navItemLinks(sport.children)}
+      allHref={sport.href}
+      allLabel={`Todo ${sport.label}`}
+    />
+  );
+}
+
+export async function MainNav() {
+  const nav = await getNavTree();
+
   return (
     <nav className="main-nav" aria-label="Secciones principales">
       <div className="shell nav-bar">
@@ -114,17 +93,16 @@ export function MainNav() {
             <Link className="nav-home-desktop" href="/">Portada</Link>
             <Link href="/categoria/nacionales">Nacionales</Link>
 
-            {sportMenus.map((sport) => (
-              <SportMenu key={sport.label} label={sport.label} items={sport.items} />
+            {nav.primary.map((sport) => (
+              <SportNavItem key={sport.slug} sport={sport} />
             ))}
 
-            <Link href="/categoria/futbol">Fútbol</Link>
             <Link href="/loterias">Loterías</Link>
 
             <SportMenu
               label="Más deportes"
-              items={moreSports}
-              allHref={moreSportsHref}
+              items={navItemLinks(nav.moreSports)}
+              allHref={nav.moreSportsHref}
               allLabel="Otros deportes"
               alignEnd
             />

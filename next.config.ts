@@ -11,6 +11,8 @@ const nextConfig: NextConfig = {
       { source: "/categoria/f1", destination: "/categoria/formula-1", permanent: true },
       { source: "/categoria/formula1", destination: "/categoria/formula-1", permanent: true },
       { source: "/categoria/moto-gp", destination: "/categoria/motogp", permanent: true },
+      { source: "/categoria/motor", destination: "/categoria/automovilismo", permanent: true },
+      { source: "/categoria/beisbol-del-caribe", destination: "/categoria/beisbol-latino", permanent: true },
     ];
   },
 };

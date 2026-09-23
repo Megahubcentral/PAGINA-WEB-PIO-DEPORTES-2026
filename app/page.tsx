@@ -121,11 +121,11 @@ export default async function Home() {
     getCategoryArticles("mlb", homeNewsQuery),
     getCategoryArticles("nba", nbaQuery),
     getCategoryArticles("lidom", homeNewsQuery),
-    getCategoryArticles("futbol", homeNewsQuery),
+    getCategoryArticles("futbol-soccer", homeNewsQuery),
     getCategoryArticles("nfl", homeNewsQuery),
     getCategoryArticles("nhl", homeNewsQuery),
     getCategoryArticles("tennis", homeNewsQuery),
-    getCategoryArticles("beisbol-del-caribe", homeNewsQuery),
+    getCategoryArticles("beisbol-latino", homeNewsQuery),
     getCategoryArticles("otros-deportes", homeNewsQuery),
     getLotteryFeed(),
     getInstagramFeed(),
@@ -274,7 +274,7 @@ export default async function Home() {
         <HomeFeatureBlock
           kicker="Juego internacional"
           title="Fútbol (Soccer)"
-          href="/categoria/futbol"
+          href="/categoria/futbol-soccer"
           articles={footballStories}
           reverse
           contrast
