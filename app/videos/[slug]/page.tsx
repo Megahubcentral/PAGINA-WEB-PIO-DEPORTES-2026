@@ -57,7 +57,7 @@ export default async function VideoPage({ params }: { params: Promise<{ slug: st
         <div className="shell video-watch-layout">
           <article>
             <Link className="video-watch-back" href="/videos">← Todos los videos</Link>
-            <span className="eyebrow">{video.section} · {video.duration}</span>
+            <span className="eyebrow">{video.section}{video.duration ? ` · ${video.duration}` : ""}</span>
             <h1>{video.title}</h1>
 
             <div className="video-player-frame">
@@ -105,7 +105,7 @@ export default async function VideoPage({ params }: { params: Promise<{ slug: st
             {videos.filter((item) => item.slug !== video.slug).slice(0, 4).map((item) => (
               <article key={item.id}>
                 <Link className="video-archive-thumb" href={`/videos/${item.slug}`}>
-                  <img src={item.thumbnail} alt="" loading="lazy" /><span>▶</span><time>{item.duration}</time>
+                  <img src={item.thumbnail} alt={item.title} loading="lazy" /><span>▶</span>{item.duration ? <time>{item.duration}</time> : null}
                 </Link>
                 <small>{item.section}</small>
                 <h3><Link href={`/videos/${item.slug}`}>{item.title}</Link></h3>

@@ -784,7 +784,9 @@ button, input, select, textarea { font: inherit; }
 .article-header h1 { margin: 12px 0 16px; font-family: var(--display); font-size: clamp(42px, 6vw, 70px); font-weight: 850; line-height: 1; letter-spacing: -.045em; }
 .article-deck { max-width: 760px; color: var(--muted); font-size: 18px; line-height: 1.55; }
 .article-byline { display: flex; gap: 20px; padding: 20px 0; margin: 23px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); font-size: 11px; }
-.article-hero-image { width: 100%; max-height: 590px; object-fit: cover; }
+.article-hero { margin: 0; width: 100%; }
+.article-hero-frame { position: relative; aspect-ratio: 16 / 9; overflow: hidden; background: #ddd; }
+.article-hero-image { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
 .article-image-credit { margin: 8px 0 0; color: var(--muted); font-size: 9px; line-height: 1.45; }
 .article-image-credit a { text-decoration: underline; text-underline-offset: 2px; }
 .article-content { font-family: Georgia, "Times New Roman", serif; font-size: 18px; line-height: 1.8; }

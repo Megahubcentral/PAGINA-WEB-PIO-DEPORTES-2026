@@ -72,13 +72,17 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
                 <span>Santo Domingo, RD</span>
               </div>
             </header>
-            <img className="article-hero-image" src={article.image} alt={article.imageAlt || article.title} fetchPriority="high" />
-            {article.imageCredit ? (
-              <p className="article-image-credit">
-                Foto: {article.imageSourceUrl ? <a href={article.imageSourceUrl} target="_blank" rel="noreferrer">{article.imageCredit}</a> : article.imageCredit}
-                {article.imageLicense ? <> · {article.imageLicenseUrl ? <a href={article.imageLicenseUrl} target="_blank" rel="noreferrer">{article.imageLicense}</a> : article.imageLicense}</> : null}
-              </p>
-            ) : null}
+            <figure className="article-hero">
+              <div className="article-hero-frame">
+                <img className="article-hero-image" src={article.image} alt={article.imageAlt || article.title} fetchPriority="high" />
+              </div>
+              {article.imageCredit ? (
+                <figcaption className="article-image-credit">
+                  Foto: {article.imageSourceUrl ? <a href={article.imageSourceUrl} target="_blank" rel="noreferrer">{article.imageCredit}</a> : article.imageCredit}
+                  {article.imageLicense ? <> · {article.imageLicenseUrl ? <a href={article.imageLicenseUrl} target="_blank" rel="noreferrer">{article.imageLicense}</a> : article.imageLicense}</> : null}
+                </figcaption>
+              ) : null}
+            </figure>
             <ArticleBody html={article.content} />
             <div className="wide-ad article-end-ad">
               <AdSlot slot={ADSENSE_SLOTS.finalDeArticulo} />

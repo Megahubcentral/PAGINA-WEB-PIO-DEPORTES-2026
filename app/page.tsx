@@ -165,7 +165,7 @@ export default async function Home() {
                 {hero ? (
                 <article className="hero-story">
                   <Link className="hero-media" href={`/noticias/${hero.slug}`}>
-                    <img src={hero.image} alt="" fetchPriority="high" />
+                    <img src={hero.image} alt={hero.imageAlt || hero.title} fetchPriority="high" />
                     <div className="hero-shade" />
                     <div className="hero-copy">
                       <span className="hero-category">{hero.category}</span>

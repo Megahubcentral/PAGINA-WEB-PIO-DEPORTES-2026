@@ -31,12 +31,12 @@ export function VideoCarousel({ videos }: { videos: VideoItem[] }) {
   return (
     <div className="video-carousel" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)} onFocus={() => setPaused(true)} onBlur={() => setPaused(false)}>
       <div className="video-stage">
-        <img src={video.thumbnail} alt="" />
+        <img src={video.thumbnail} alt={video.title} />
         <div className="video-stage-shade" />
         <Link className="video-stage-link" href={`/videos/${video.slug}`}>
           <span className="round-play large">▶</span>
           <div>
-            <small>{video.section} · {video.duration}</small>
+            <small>{video.section}{video.duration ? ` · ${video.duration}` : ""}</small>
             <h3>{video.title}</h3>
             <span className="watch-copy">Reproducir video</span>
           </div>
@@ -57,8 +57,8 @@ export function VideoCarousel({ videos }: { videos: VideoItem[] }) {
             onClick={() => setActive(index)}
             key={`${item.id}-${index}`}
           >
-            <span className="video-thumb"><img src={item.thumbnail} alt="" /><i>▶</i></span>
-            <span className="video-rail-copy"><small>{item.section} · {item.duration}</small><strong>{item.title}</strong></span>
+            <span className="video-thumb"><img src={item.thumbnail} alt={item.title} /><i>▶</i></span>
+            <span className="video-rail-copy"><small>{item.section}{item.duration ? ` · ${item.duration}` : ""}</small><strong>{item.title}</strong></span>
           </button>
         ))}
       </div>

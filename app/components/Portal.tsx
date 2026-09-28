@@ -59,7 +59,7 @@ export function ArticleCard({ article, compact = false }: { article: Article; co
   return (
     <article className={compact ? "article-card compact" : "article-card"}>
       <Link className="article-image" href={`/noticias/${article.slug}`}>
-        <img src={article.image} alt="" loading="lazy" />
+        <img src={article.image} alt={article.imageAlt || article.title} loading="lazy" />
         {article.media ? <span className="media-badge">{article.media === "video" ? "▶" : "♪"}</span> : null}
       </Link>
       <div className="article-body">

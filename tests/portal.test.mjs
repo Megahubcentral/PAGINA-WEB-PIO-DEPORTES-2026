@@ -329,7 +329,7 @@ test("the homepage Instagram feed is server-side, cached and automatically refre
 });
 
 test("SEO technical signals cover canonicals, structured data, sitemaps and real 404s", async () => {
-  const [seo, layout, home, robots, sitemapIndex, sitemapPages, sitemapNewsChunk, sitemapLib, wordpress, article, video, category, search, newsSitemap, proxy, notFound, nextConfig] = await Promise.all([
+  const [seo, layout, home, robots, sitemapIndex, sitemapPages, sitemapNewsChunk, sitemapLib, wordpress, article, video, category, search, newsSitemap, proxy, notFound, nextConfig, portal, styles] = await Promise.all([
     readFile(new URL("lib/seo.ts", root), "utf8"),
     readFile(new URL("app/layout.tsx", root), "utf8"),
     readFile(new URL("app/page.tsx", root), "utf8"),
@@ -347,6 +347,8 @@ test("SEO technical signals cover canonicals, structured data, sitemaps and real
     readFile(new URL("proxy.ts", root), "utf8"),
     readFile(new URL("app/not-found.tsx", root), "utf8"),
     readFile(new URL("next.config.ts", root), "utf8"),
+    readFile(new URL("app/components/Portal.tsx", root), "utf8"),
+    readFile(new URL("app/globals.css", root), "utf8"),
   ]);
 
   assert.match(seo, /canonicalUrl/);
@@ -381,10 +383,20 @@ test("SEO technical signals cover canonicals, structured data, sitemaps and real
   assert.match(article, /newsArticleJsonLd/);
   assert.match(article, /breadcrumbJsonLd/);
   assert.match(article, /dateTime=\{article\.date\}/);
+  assert.match(article, /article-hero-frame/);
   assert.match(video, /videoObjectJsonLd/);
   assert.match(video, /notFound\(\)/);
   assert.match(category, /profile\.description/);
   assert.match(category, /index: page === 1/);
+  assert.doesNotMatch(category, /Actualizado hace 6 minutos/);
+  assert.match(category, /Actualizado \{lead\.publishedAt\}/);
+  assert.match(home, /hero\.imageAlt \|\| hero\.title/);
+  assert.match(portal, /article\.imageAlt \|\| article\.title/);
+  assert.match(wordpress, /editorialExcerpt/);
+  assert.match(wordpress, /videoDurationFromPost/);
+  assert.doesNotMatch(wordpress, /duration: "Video"/);
+  assert.match(styles, /article-hero-frame/);
+  assert.match(styles, /aspect-ratio: 16 \/ 9/);
   assert.match(search, /index: false/);
   assert.match(newsSitemap, /force-dynamic/);
   assert.match(newsSitemap, /news:publication_date/);

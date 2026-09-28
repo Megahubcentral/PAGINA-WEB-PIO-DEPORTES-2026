@@ -43,10 +43,10 @@ export default async function VideosPage() {
 
           <article className="video-archive-feature">
             <Link href={`/videos/${featured.slug}`}>
-              <img src={featured.thumbnail} alt="" fetchPriority="high" />
+              <img src={featured.thumbnail} alt={featured.title} fetchPriority="high" />
               <span className="video-archive-shade" />
               <div className="video-archive-feature-copy">
-                <span>{featured.section} · {featured.duration}</span>
+                <span>{featured.section}{featured.duration ? ` · ${featured.duration}` : ""}</span>
                 <h2>{featured.title}</h2>
                 <p>{featured.excerpt}</p>
               </div>
@@ -58,8 +58,8 @@ export default async function VideosPage() {
             {videos.slice(1).map((video) => (
               <article key={video.id}>
                 <Link className="video-archive-thumb" href={`/videos/${video.slug}`}>
-                  <img src={video.thumbnail} alt="" loading="lazy" />
-                  <span>▶</span><time>{video.duration}</time>
+                  <img src={video.thumbnail} alt={video.title} loading="lazy" />
+                  <span>▶</span>{video.duration ? <time>{video.duration}</time> : null}
                 </Link>
                 <small>{video.section}</small>
                 <h3><Link href={`/videos/${video.slug}`}>{video.title}</Link></h3>

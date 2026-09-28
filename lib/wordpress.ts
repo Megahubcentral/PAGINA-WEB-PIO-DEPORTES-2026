@@ -34,7 +34,7 @@ export type VideoItem = {
   publishedAt: string;
   date?: string;
   dateModified?: string;
-  duration: string;
+  duration?: string;
   embedUrl?: string;
   sourceUrl?: string;
 };
@@ -457,26 +457,11 @@ const curatedLeadImages: Record<string, Record<number, EditorialImage>> = {
 };
 
 const editorialAngles = [
-  {
-    title: "las claves que explican el momento",
-    excerpt: "Un repaso a las decisiones, estadísticas y protagonistas que ayudan a entender el desarrollo de esta historia deportiva.",
-  },
-  {
-    title: "protagonistas, datos y próximos pasos",
-    excerpt: "El escenario queda abierto con nuevos retos, figuras a seguir y una agenda que puede modificar el rumbo de la competencia.",
-  },
-  {
-    title: "qué cambia y por qué importa",
-    excerpt: "Contexto y análisis para conocer el impacto de la noticia dentro de la temporada y sus posibles consecuencias deportivas.",
-  },
-  {
-    title: "el escenario que se abre a partir de ahora",
-    excerpt: "Equipos, atletas y cuerpos técnicos ajustan sus planes mientras la atención se concentra en los próximos compromisos.",
-  },
-  {
-    title: "agenda, contexto y puntos de atención",
-    excerpt: "Las fechas importantes, los nombres propios y los detalles que la fanaticada debe tener presentes durante los próximos días.",
-  },
+  "las claves que explican el momento",
+  "protagonistas, datos y próximos pasos",
+  "qué cambia y por qué importa",
+  "el escenario que se abre a partir de ahora",
+  "agenda, contexto y puntos de atención",
 ];
 
 const articlesPerCategory = 30;
@@ -494,8 +479,8 @@ export const localCategoryArticles: Article[] = Object.entries(localCategoryProf
       return {
         id: 1000 + categoryIndex * 100 + index,
         slug: `${categorySlug}-informe-${index + 1}`,
-        title: series === 0 ? baseTitle : `${baseTitle}: ${angle.title}`,
-        excerpt: angle.excerpt,
+        title: series === 0 ? baseTitle : `${baseTitle}: ${angle}`,
+        excerpt: series === 0 ? `${baseTitle}.` : `${baseTitle}: ${angle}.`,
         category: profile.category,
         categorySlug,
         categorySlugs: [categorySlug],
@@ -625,7 +610,11 @@ type WpPost = {
     "wp:featuredmedia"?: Array<{
       source_url?: string;
       alt_text?: string;
-      media_details?: { sizes?: { large?: { source_url?: string } } };
+      media_details?: {
+        length?: number;
+        length_formatted?: string;
+        sizes?: { large?: { source_url?: string } };
+      };
     }>;
     "wp:term"?: WpTerm[][];
     author?: Array<{ name?: string }>;
@@ -687,6 +676,43 @@ function plainText(value = "") {
   return decodeHtmlEntities(value.replace(/<[^>]*>/g, " "))
     .replace(/\s+/g, " ")
     .trim();
+}
+
+const minExcerptLength = 80;
+
+function firstParagraphText(html = "") {
+  const paragraph = html.match(/<p\b[^>]*>([\s\S]*?)<\/p>/i)?.[1];
+  return plainText(paragraph ?? "");
+}
+
+function editorialExcerpt(excerptHtml = "", contentHtml = "") {
+  const excerpt = plainText(excerptHtml)
+    .replace(/\[(?:&hellip;|…|...)\]$/u, "")
+    .replace(/\s*(?:contin[uú]a? leyendo|leer m[aá]s|read more).*$/i, "")
+    .trim();
+  if (excerpt.length >= minExcerptLength) return excerpt;
+  return firstParagraphText(contentHtml) || excerpt;
+}
+
+function clockFromSeconds(seconds: number) {
+  const total = Math.round(seconds);
+  if (!Number.isFinite(total) || total <= 0) return undefined;
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const rest = total % 60;
+  if (hours) return `${hours}:${String(minutes).padStart(2, "0")}:${String(rest).padStart(2, "0")}`;
+  return `${String(minutes).padStart(2, "0")}:${String(rest).padStart(2, "0")}`;
+}
+
+function videoClock(value?: string) {
+  const raw = value?.trim() ?? "";
+  if (/^(?:(\d+):)?(\d{1,2}):(\d{2})$/.test(raw)) return raw;
+  return undefined;
+}
+
+function videoDurationFromPost(post: WpPost) {
+  const media = post._embedded?.["wp:featuredmedia"]?.[0]?.media_details;
+  return clockFromSeconds(Number(media?.length)) ?? videoClock(media?.length_formatted);
 }
 
 function decodeWordpressHtml(value = "") {
@@ -753,7 +779,7 @@ function normalizePost(post: WpPost): Article {
     id: post.id,
     slug: post.slug,
     title,
-    excerpt: plainText(post.excerpt?.rendered),
+    excerpt: editorialExcerpt(post.excerpt?.rendered, post.content?.rendered),
     category: displayCategoryName(decodeHtmlEntities(category?.name ?? "Actualidad"), category?.slug ?? "actualidad"),
     categorySlug: resolveCategorySlug(category?.slug ?? "actualidad"),
     categorySlugs,
@@ -813,7 +839,7 @@ function normalizeVideoPost(post: WpPost): VideoItem {
     publishedAt: article.publishedAt,
     date: article.date,
     dateModified: article.dateModified,
-    duration: "Video",
+    duration: videoDurationFromPost(post),
     embedUrl,
     sourceUrl: embedUrl ?? pioYoutubeChannel,
   };

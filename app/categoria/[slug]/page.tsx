@@ -158,13 +158,13 @@ export default async function CategoryPage({
             <>
           <div className="category-front-toolbar">
             <span><i /> Selección editorial</span>
-            <time>Actualizado hace 6 minutos</time>
+            <time dateTime={lead.date}>Actualizado {lead.publishedAt}</time>
           </div>
 
           <div className="category-front-grid">
             <article className="category-lead-story">
               <Link href={`/noticias/${lead.slug}`}>
-                <img src={lead.image} alt="" fetchPriority="high" />
+                <img src={lead.image} alt={lead.imageAlt || lead.title} fetchPriority="high" />
                 <span className="category-lead-shade" />
                 <div className="category-lead-copy">
                   <span>{lead.category} · En portada</span>
@@ -179,7 +179,7 @@ export default async function CategoryPage({
             <div className="category-secondary-stories">
               {secondary.map((article) => (
                 <article key={article.id}>
-                  <Link className="category-secondary-image" href={`/noticias/${article.slug}`}><img src={article.image} alt="" loading="lazy" /></Link>
+                  <Link className="category-secondary-image" href={`/noticias/${article.slug}`}><img src={article.image} alt={article.imageAlt || article.title} loading="lazy" /></Link>
                   <span>{article.category}</span>
                   <h3><Link href={`/noticias/${article.slug}`}>{article.title}</Link></h3>
                   <small>{article.publishedAt}</small>
@@ -215,7 +215,7 @@ export default async function CategoryPage({
               <div className="category-news-feed">
                 {feed.map((article) => (
                   <article key={article.id}>
-                    <Link href={`/noticias/${article.slug}`}><img src={article.image} alt="" loading="lazy" /></Link>
+                    <Link href={`/noticias/${article.slug}`}><img src={article.image} alt={article.imageAlt || article.title} loading="lazy" /></Link>
                     <div>
                       <span>{article.category}</span>
                       <h3><Link href={`/noticias/${article.slug}`}>{article.title}</Link></h3>
