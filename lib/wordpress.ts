@@ -44,11 +44,16 @@ export type SitemapEntry = {
   lastModified?: string;
 };
 
-export type SitemapContent = {
-  articles: SitemapEntry[];
-  videos: SitemapEntry[];
+export type SitemapIndexMeta = {
+  newsChunks: number;
+  postTotal: number;
   fromWordpress: boolean;
 };
+
+export const SITEMAP_NEWS_CHUNK_SIZE = 1000;
+export const WP_SITEMAP_PER_PAGE = 100;
+const wpPagesPerNewsChunk = SITEMAP_NEWS_CHUNK_SIZE / WP_SITEMAP_PER_PAGE;
+const videoSitemapMaxPages = 20;
 
 export type NewsSitemapEntry = {
   slug: string;
@@ -819,12 +824,15 @@ async function wpFetch(path: string): Promise<any> {
   return result?.data ?? null;
 }
 
-async function wpFetchResult<T = unknown>(path: string): Promise<{ data: T; total: number; totalPages: number } | null> {
+async function wpFetchResult<T = unknown>(
+  path: string,
+  options?: { timeoutMs?: number },
+): Promise<{ data: T; total: number; totalPages: number } | null> {
   if (!apiBase) return null;
   const response = await fetch(`${apiBase}${path}`, {
     next: { revalidate: 120 },
     headers: { Accept: "application/json" },
-    signal: AbortSignal.timeout(8000),
+    signal: AbortSignal.timeout(options?.timeoutMs ?? 8000),
   });
   if (response.status === 400) {
     return { data: [] as unknown as T, total: 0, totalPages: 0 };
@@ -1198,13 +1206,23 @@ export async function getCategoryArticles(slug: string, options?: ArticleQueryOp
   ], options);
 
   try {
-    const [categories, excludeQuery] = await Promise.all([
-      getWordpressCategories(),
+    const [slugTerms, tree, excludeQuery] = await Promise.all([
+      wpFetch(`/categories?slug=${encodeURIComponent(resolvedSlug)}`) as Promise<Array<{ id?: number; slug?: string; name?: string; parent?: number; count?: number }> | null>,
+      getWordpressCategories().catch(() => [] as WordpressCategory[]),
       tagExcludeQuery(options),
     ]);
-    const match = categories.find((category) => category.slug.toLowerCase() === resolvedSlug.toLowerCase());
+    const slugMatch = slugTerms?.[0]?.id
+      ? {
+          id: slugTerms[0].id,
+          slug: slugTerms[0].slug ?? resolvedSlug,
+          name: slugTerms[0].name ?? resolvedSlug,
+          parent: slugTerms[0].parent ?? 0,
+          count: slugTerms[0].count ?? 0,
+        } satisfies WordpressCategory
+      : undefined;
+    const match = tree.find((category) => category.slug.toLowerCase() === resolvedSlug.toLowerCase()) ?? slugMatch;
     const categoryIds = match
-      ? (options?.exactCategory ? [match.id] : descendantCategoryIds(categories, match.id))
+      ? (options?.exactCategory || !tree.length ? [match.id] : descendantCategoryIds(tree, match.id))
       : [];
     if (categoryIds.length) {
       const posts = await wpFetch(
@@ -1289,7 +1307,6 @@ export async function getVideoBySlug(slug: string): Promise<VideoItem | undefine
 
 const sitemapPostFields = "_fields=id,slug,date,modified,format,title";
 const newsWindowMs = 48 * 60 * 60 * 1000;
-const sitemapPageCap = 50;
 
 type WpSitemapPost = {
   id?: number;
@@ -1300,9 +1317,8 @@ type WpSitemapPost = {
   title?: { rendered?: string };
 };
 
-function isVideoPost(post: Pick<WpSitemapPost, "format">, videoSlugs: Set<string>, slug?: string) {
-  if (post.format === "video") return true;
-  return Boolean(slug && videoSlugs.has(slug));
+function isVideoFormat(post: Pick<WpSitemapPost, "format">) {
+  return post.format === "video";
 }
 
 function toSitemapEntry(post: WpSitemapPost): SitemapEntry | null {
@@ -1313,23 +1329,30 @@ function toSitemapEntry(post: WpSitemapPost): SitemapEntry | null {
   };
 }
 
-async function paginateWpPosts(query: string): Promise<WpSitemapPost[]> {
-  const first = await wpFetchResult<WpSitemapPost[]>(`/posts?${query}&per_page=100&page=1`);
+async function fetchWpPostsPage(query: string, page: number) {
+  return wpFetchResult<WpSitemapPost[]>(`/posts?${query}&per_page=${WP_SITEMAP_PER_PAGE}&page=${page}`, {
+    timeoutMs: 20000,
+  });
+}
+
+async function paginateWpPosts(
+  query: string,
+  options?: { fromPage?: number; toPage?: number; maxPages?: number },
+): Promise<WpSitemapPost[]> {
+  const fromPage = Math.max(1, options?.fromPage ?? 1);
+  const first = await fetchWpPostsPage(query, fromPage);
   if (!first || !Array.isArray(first.data)) return [];
-  const posts = [...first.data];
-  const totalPages = Math.min(Math.max(first.totalPages || 1, 1), sitemapPageCap);
-  const remaining = Array.from({ length: totalPages - 1 }, (_, index) => index + 2);
-  const batchSize = 5;
-  for (let index = 0; index < remaining.length; index += batchSize) {
-    const batch = remaining.slice(index, index + batchSize);
-    const results = await Promise.all(
-      batch.map((page) => wpFetchResult<WpSitemapPost[]>(`/posts?${query}&per_page=100&page=${page}`)),
-    );
-    for (const result of results) {
-      if (result && Array.isArray(result.data) && result.data.length) posts.push(...result.data);
-    }
-  }
-  return posts;
+  const totalPages = Math.max(first.totalPages || 1, 1);
+  const cappedByMax = options?.maxPages ? fromPage + options.maxPages - 1 : totalPages;
+  const lastPage = Math.min(options?.toPage ?? totalPages, cappedByMax, totalPages);
+  if (lastPage <= fromPage) return [...first.data];
+
+  const remaining = Array.from({ length: lastPage - fromPage }, (_, index) => fromPage + 1 + index);
+  const rest = await Promise.all(remaining.map((page) => fetchWpPostsPage(query, page)));
+  return [
+    ...first.data,
+    ...rest.flatMap((result) => (result && Array.isArray(result.data) ? result.data : [])),
+  ];
 }
 
 async function getWordpressVideoPosts() {
@@ -1340,12 +1363,12 @@ async function getWordpressVideoPosts() {
     ]);
     const [categoryPosts, tagPosts, formatPosts] = await Promise.all([
       categoryIds.length
-        ? paginateWpPosts(`categories=${categoryIds.join(",")}&${sitemapPostFields}`)
+        ? paginateWpPosts(`categories=${categoryIds.join(",")}&${sitemapPostFields}`, { maxPages: videoSitemapMaxPages })
         : Promise.resolve([] as WpSitemapPost[]),
       tagIds.length
-        ? paginateWpPosts(`tags=${tagIds.join(",")}&${sitemapPostFields}`)
+        ? paginateWpPosts(`tags=${tagIds.join(",")}&${sitemapPostFields}`, { maxPages: videoSitemapMaxPages })
         : Promise.resolve([] as WpSitemapPost[]),
-      paginateWpPosts(`format=video&${sitemapPostFields}`),
+      paginateWpPosts(`format=video&${sitemapPostFields}`, { maxPages: videoSitemapMaxPages }),
     ]);
     const bySlug = new Map<string, WpSitemapPost>();
     for (const post of [...categoryPosts, ...tagPosts, ...formatPosts]) {
@@ -1357,46 +1380,64 @@ async function getWordpressVideoPosts() {
   }
 }
 
-function localSitemapContent(): SitemapContent {
-  return {
-    articles: [...fallbackArticles, ...localCategoryArticles].map((article) => ({ slug: article.slug })),
-    videos: fallbackVideos.map((video) => ({ slug: video.slug })),
-    fromWordpress: false,
-  };
+function localNewsEntries(): SitemapEntry[] {
+  return [...fallbackArticles, ...localCategoryArticles].map((article) => ({ slug: article.slug }));
 }
 
-export async function getSitemapContent(): Promise<SitemapContent> {
-  try {
-    const [posts, videoPosts] = await Promise.all([
-      paginateWpPosts(sitemapPostFields),
-      getWordpressVideoPosts(),
-    ]);
-    const videoSlugs = new Set(videoPosts.map((post) => post.slug).filter(Boolean) as string[]);
-    const articles = posts
-      .filter((post) => !isVideoPost(post, videoSlugs, post.slug))
-      .map(toSitemapEntry)
-      .filter((entry): entry is SitemapEntry => Boolean(entry));
-    const videos = videoPosts
-      .map(toSitemapEntry)
-      .filter((entry): entry is SitemapEntry => Boolean(entry));
+function localVideoEntries(): SitemapEntry[] {
+  return fallbackVideos.map((video) => ({ slug: video.slug }));
+}
 
-    if (!articles.length && !videos.length) return localSitemapContent();
-    return { articles, videos, fromWordpress: true };
+export async function getSitemapIndexMeta(): Promise<SitemapIndexMeta> {
+  try {
+    const first = await fetchWpPostsPage(sitemapPostFields, 1);
+    if (!first || !first.totalPages) {
+      return { newsChunks: 1, postTotal: 0, fromWordpress: false };
+    }
+    const newsChunks = Math.max(1, Math.ceil(first.totalPages / wpPagesPerNewsChunk));
+    return { newsChunks, postTotal: first.total, fromWordpress: true };
   } catch {
-    return localSitemapContent();
+    return { newsChunks: 1, postTotal: 0, fromWordpress: false };
+  }
+}
+
+export async function getSitemapNewsChunk(chunk: number): Promise<SitemapEntry[]> {
+  const safeChunk = Math.max(1, Math.floor(chunk) || 1);
+  const fromPage = (safeChunk - 1) * wpPagesPerNewsChunk + 1;
+  const toPage = safeChunk * wpPagesPerNewsChunk;
+  try {
+    const posts = await paginateWpPosts(sitemapPostFields, { fromPage, toPage });
+    const articles = posts
+      .filter((post) => !isVideoFormat(post))
+      .map(toSitemapEntry)
+      .filter((entry): entry is SitemapEntry => Boolean(entry));
+    if (articles.length) return articles;
+    return safeChunk === 1 ? localNewsEntries() : [];
+  } catch {
+    return safeChunk === 1 ? localNewsEntries() : [];
+  }
+}
+
+export async function getSitemapVideos(): Promise<SitemapEntry[]> {
+  try {
+    const videos = (await getWordpressVideoPosts())
+      .map(toSitemapEntry)
+      .filter((entry): entry is SitemapEntry => Boolean(entry));
+    return videos.length ? videos : localVideoEntries();
+  } catch {
+    return localVideoEntries();
   }
 }
 
 export async function getNewsSitemapEntries(): Promise<NewsSitemapEntry[]> {
   try {
     const after = new Date(Date.now() - newsWindowMs).toISOString();
-    const [posts, videoPosts] = await Promise.all([
-      paginateWpPosts(`after=${encodeURIComponent(after)}&orderby=date&order=desc&${sitemapPostFields}`),
-      getWordpressVideoPosts(),
-    ]);
-    const videoSlugs = new Set(videoPosts.map((post) => post.slug).filter(Boolean) as string[]);
+    const posts = await paginateWpPosts(
+      `after=${after}&orderby=date&order=desc&${sitemapPostFields}`,
+      { maxPages: 10 },
+    );
     return posts
-      .filter((post) => post.slug && post.date && !isVideoPost(post, videoSlugs, post.slug))
+      .filter((post) => post.slug && post.date && !isVideoFormat(post))
       .slice(0, 1000)
       .map((post) => ({
         slug: post.slug as string,

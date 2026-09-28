@@ -1,18 +1,11 @@
 import { canonicalUrl, toAbsoluteIsoDate } from "../../lib/seo";
+import { xmlEscape, xmlResponse } from "../../lib/sitemaps";
 import { getNewsSitemapEntries } from "../../lib/wordpress";
 
+export const dynamic = "force-dynamic";
 export const revalidate = 120;
 
 const NEWS_PUBLICATION = "Pío Deportes";
-
-function xmlEscape(value: string) {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&apos;");
-}
 
 export async function GET() {
   const entries = await getNewsSitemapEntries();
@@ -31,17 +24,10 @@ export async function GET() {
   </url>`;
   }).join("\n");
 
-  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+  return xmlResponse(`<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">
 ${urls}
 </urlset>
-`;
-
-  return new Response(xml, {
-    headers: {
-      "content-type": "application/xml; charset=utf-8",
-      "cache-control": "public, max-age=60, s-maxage=120",
-    },
-  });
+`);
 }

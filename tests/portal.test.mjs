@@ -329,12 +329,15 @@ test("the homepage Instagram feed is server-side, cached and automatically refre
 });
 
 test("SEO technical signals cover canonicals, structured data, sitemaps and real 404s", async () => {
-  const [seo, layout, home, robots, sitemap, wordpress, article, video, category, search, newsSitemap, proxy, notFound] = await Promise.all([
+  const [seo, layout, home, robots, sitemapIndex, sitemapPages, sitemapNewsChunk, sitemapLib, wordpress, article, video, category, search, newsSitemap, proxy, notFound, nextConfig] = await Promise.all([
     readFile(new URL("lib/seo.ts", root), "utf8"),
     readFile(new URL("app/layout.tsx", root), "utf8"),
     readFile(new URL("app/page.tsx", root), "utf8"),
     readFile(new URL("app/robots.ts", root), "utf8"),
-    readFile(new URL("app/sitemap.ts", root), "utf8"),
+    readFile(new URL("app/sitemap.xml/route.ts", root), "utf8"),
+    readFile(new URL("app/sitemap-pages.xml/route.ts", root), "utf8"),
+    readFile(new URL("app/sitemap-noticias/[chunk]/route.ts", root), "utf8"),
+    readFile(new URL("lib/sitemaps.ts", root), "utf8"),
     readFile(new URL("lib/wordpress.ts", root), "utf8"),
     readFile(new URL("app/noticias/[slug]/page.tsx", root), "utf8"),
     readFile(new URL("app/videos/[slug]/page.tsx", root), "utf8"),
@@ -343,6 +346,7 @@ test("SEO technical signals cover canonicals, structured data, sitemaps and real
     readFile(new URL("app/news-sitemap.xml/route.ts", root), "utf8"),
     readFile(new URL("proxy.ts", root), "utf8"),
     readFile(new URL("app/not-found.tsx", root), "utf8"),
+    readFile(new URL("next.config.ts", root), "utf8"),
   ]);
 
   assert.match(seo, /canonicalUrl/);
@@ -355,15 +359,22 @@ test("SEO technical signals cover canonicals, structured data, sitemaps and real
   assert.match(home, /homeMetadata/);
   assert.match(robots, /news-sitemap\.xml/);
   assert.match(robots, /sitemap\.xml/);
-  assert.match(sitemap, /getSitemapContent/);
-  assert.match(sitemap, /lastModified/);
-  assert.match(sitemap, /toAbsoluteIsoDate/);
-  assert.doesNotMatch(sitemap, /fallbackArticles\.map/);
+  assert.match(sitemapIndex, /sitemapIndexXml/);
+  assert.match(sitemapIndex, /sitemap-pages\.xml/);
+  assert.match(sitemapIndex, /sitemap-noticias-/);
+  assert.match(sitemapPages, /SITEMAP_PAGE_PATHS/);
+  assert.match(sitemapNewsChunk, /getSitemapNewsChunk/);
+  assert.match(sitemapLib, /sitemapindex/);
+  assert.match(nextConfig, /sitemap-noticias-:chunk/);
   assert.match(wordpress, /dateModified/);
-  assert.match(wordpress, /getSitemapContent/);
+  assert.match(wordpress, /getSitemapIndexMeta/);
+  assert.match(wordpress, /getSitemapNewsChunk/);
+  assert.match(wordpress, /getSitemapVideos/);
   assert.match(wordpress, /getNewsSitemapEntries/);
   assert.match(wordpress, /newsWindowMs = 48/);
-  assert.match(wordpress, /sitemapPageCap = 50/);
+  assert.match(wordpress, /SITEMAP_NEWS_CHUNK_SIZE = 1000/);
+  assert.doesNotMatch(wordpress, /sitemapPageCap = 50/);
+  assert.doesNotMatch(wordpress, /getSitemapContent/);
   assert.doesNotMatch(wordpress, /\?\? fallbackArticles\[0\]/);
   assert.doesNotMatch(wordpress, /\?\? fallbackVideos\[0\]/);
   assert.match(article, /notFound\(\)/);
@@ -375,6 +386,7 @@ test("SEO technical signals cover canonicals, structured data, sitemaps and real
   assert.match(category, /profile\.description/);
   assert.match(category, /index: page === 1/);
   assert.match(search, /index: false/);
+  assert.match(newsSitemap, /force-dynamic/);
   assert.match(newsSitemap, /news:publication_date/);
   assert.match(newsSitemap, /news:name/);
   assert.match(newsSitemap, /<news:language>es<\/news:language>/);

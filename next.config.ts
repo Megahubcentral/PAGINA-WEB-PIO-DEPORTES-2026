@@ -15,6 +15,11 @@ const nextConfig: NextConfig = {
       { source: "/categoria/beisbol-del-caribe", destination: "/categoria/beisbol-latino", permanent: true },
     ];
   },
+  async rewrites() {
+    return [
+      { source: "/sitemap-noticias-:chunk(\\d+)\\.xml", destination: "/sitemap-noticias/:chunk" },
+    ];
+  },
 };
 
 export default nextConfig;
