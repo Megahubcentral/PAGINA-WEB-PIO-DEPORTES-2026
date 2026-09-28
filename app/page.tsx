@@ -12,7 +12,7 @@ import { ScoreStrip } from "./components/Scoreboard";
 import { VideoCarousel } from "./components/VideoCarousel";
 import { LotteryCompact } from "./components/LotteryCompact";
 import { InstagramFeed } from "./components/InstagramFeed";
-import { getArticlesByTag, getCategoryArticles, getVideoItems, homeNewsQuery, PORTADA_TAGS, sortByNewest, type Article } from "../lib/wordpress";
+import { getArticlesByEditorialLocation, getArticlesByTag, getCategoryArticles, getVideoItems, homeNewsQuery, PORTADA_PLACEMENTS, sortByNewest, type Article } from "../lib/wordpress";
 import { getLotteryFeed } from "../lib/lottery-provider";
 import { getInstagramFeed } from "../lib/instagram-provider";
 
@@ -112,9 +112,9 @@ export default async function Home() {
     lotteryFeed,
     instagramFeed,
   ] = await Promise.all([
-    getArticlesByTag(PORTADA_TAGS.hero, 1, { fallbackToLatest: false }),
-    getArticlesByTag(PORTADA_TAGS.below, 2, { fallbackToLatest: false }),
-    getArticlesByTag(PORTADA_TAGS.side, 2, { fallbackToLatest: false }),
+    getArticlesByEditorialLocation(PORTADA_PLACEMENTS.hero, 1, { fallbackToLatest: false }),
+    getArticlesByEditorialLocation(PORTADA_PLACEMENTS.below, 2, { fallbackToLatest: false }),
+    getArticlesByEditorialLocation(PORTADA_PLACEMENTS.side, 2, { fallbackToLatest: false }),
     getArticlesByTag("destacados", 8, homeNewsQuery),
     getVideoItems(6),
     getCategoryArticles("nacionales", homeNewsQuery),

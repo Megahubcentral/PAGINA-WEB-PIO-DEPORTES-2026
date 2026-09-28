@@ -22,6 +22,7 @@ export type Article = {
   imageLicense?: string;
   imageLicenseUrl?: string;
   tags?: string[];
+  editorialLocations?: string[];
 };
 
 export type VideoItem = {
@@ -741,6 +742,12 @@ function articleTagSlugs(terms: WpTerm[]) {
     .map((term) => term.slug as string);
 }
 
+function articleEditorialLocationSlugs(terms: WpTerm[]) {
+  return terms
+    .filter((term) => term.taxonomy === EDITORIAL_LOCATION_TAXONOMY && term.slug)
+    .map((term) => term.slug as string);
+}
+
 export function isNationalArticle(article: Article) {
   const slugs = [article.categorySlug, ...(article.categorySlugs ?? [])].map((slug) => slug.toLowerCase());
   if (slugs.some((slug) => nationalCategorySlugs.has(slug))) return true;
@@ -784,6 +791,7 @@ function normalizePost(post: WpPost): Article {
     categorySlug: resolveCategorySlug(category?.slug ?? "actualidad"),
     categorySlugs,
     tags: articleTagSlugs(terms),
+    editorialLocations: articleEditorialLocationSlugs(terms),
     image:
       media?.media_details?.sizes?.large?.source_url ??
       media?.source_url ??
@@ -898,20 +906,30 @@ type WpTermRecord = { id: number; slug?: string; name?: string };
 
 export type ArticleQueryOptions = {
   excludeTags?: string[];
+  excludeEditorialLocations?: string[];
   exactCategory?: boolean;
   fallbackToLatest?: boolean;
 };
 
-/** WordPress slugs for the three Portada blocks (names: Portada B-1 / B-2 / B-3). */
-export const PORTADA_TAGS = {
-  hero: "portada",
-  below: "portada-2",
-  side: "portada-3",
+/** Custom WP taxonomy "Ubicaciones editoriales". */
+export const EDITORIAL_LOCATION_TAXONOMY = "ubicacion_editorial";
+
+/** Terms that place a story in the three Portada blocks. */
+export const PORTADA_PLACEMENTS = {
+  hero: "portada-principal",
+  below: "portada-secundaria",
+  side: "portada-terciaria",
 } as const;
 
-export const portadaTagSlugs = [PORTADA_TAGS.hero, PORTADA_TAGS.below, PORTADA_TAGS.side];
+export const portadaPlacementSlugs = [
+  PORTADA_PLACEMENTS.hero,
+  PORTADA_PLACEMENTS.below,
+  PORTADA_PLACEMENTS.side,
+];
 
-export const homeNewsQuery: ArticleQueryOptions = { excludeTags: [...portadaTagSlugs] };
+export const homeNewsQuery: ArticleQueryOptions = {
+  excludeEditorialLocations: [...portadaPlacementSlugs],
+};
 
 async function getTagIdsBySlug(slugs: string[]) {
   const unique = [...new Set(slugs.map((slug) => slug.trim()).filter(Boolean))];
@@ -922,15 +940,40 @@ async function getTagIdsBySlug(slugs: string[]) {
   return [...new Set(batches.flatMap((terms) => (terms ?? []).map((term) => term.id).filter(Boolean)))];
 }
 
+async function getTaxonomyTermIds(taxonomy: string, slugs: string[]) {
+  const unique = [...new Set(slugs.map((slug) => slug.trim()).filter(Boolean))];
+  if (!unique.length) return [];
+  const batches = await Promise.all(
+    unique.map((slug) => wpFetch(`/${taxonomy}?slug=${encodeURIComponent(slug)}`) as Promise<WpTermRecord[] | null>),
+  );
+  return [...new Set(batches.flatMap((terms) => (terms ?? []).map((term) => term.id).filter(Boolean)))];
+}
+
 async function tagExcludeQuery(options?: ArticleQueryOptions) {
-  const ids = await getTagIdsBySlug(options?.excludeTags ?? []);
-  return ids.length ? `&tags_exclude=${ids.join(",")}` : "";
+  const [tagIds, locationIds] = await Promise.all([
+    getTagIdsBySlug(options?.excludeTags ?? []),
+    getTaxonomyTermIds(EDITORIAL_LOCATION_TAXONOMY, options?.excludeEditorialLocations ?? []),
+  ]);
+  const parts: string[] = [];
+  if (tagIds.length) parts.push(`tags_exclude=${tagIds.join(",")}`);
+  if (locationIds.length) parts.push(`${EDITORIAL_LOCATION_TAXONOMY}_exclude=${locationIds.join(",")}`);
+  return parts.length ? `&${parts.join("&")}` : "";
 }
 
 function withoutExcludedTags(articles: Article[], options?: ArticleQueryOptions) {
-  const excluded = new Set((options?.excludeTags ?? []).map((slug) => slug.toLowerCase()));
-  if (!excluded.size) return articles;
-  return articles.filter((article) => !(article.tags ?? []).some((tag) => excluded.has(tag.toLowerCase())));
+  const excludedTags = new Set((options?.excludeTags ?? []).map((slug) => slug.toLowerCase()));
+  const excludedLocations = new Set((options?.excludeEditorialLocations ?? []).map((slug) => slug.toLowerCase()));
+  if (!excludedTags.size && !excludedLocations.size) return articles;
+  return articles.filter((article) => {
+    if (excludedTags.size && (article.tags ?? []).some((tag) => excludedTags.has(tag.toLowerCase()))) return false;
+    if (
+      excludedLocations.size
+      && (article.editorialLocations ?? []).some((location) => excludedLocations.has(location.toLowerCase()))
+    ) {
+      return false;
+    }
+    return true;
+  });
 }
 
 function normalizeCategoryText(value = "") {
@@ -1001,6 +1044,31 @@ export async function getArticlesByTag(slug: string, limit = 9, options?: Articl
     if (tagIds) {
       const posts = await wpFetch(
         `/posts?tags=${tagIds}&per_page=${limit}&orderby=date&order=desc${excludeQuery}&${embedQuery}`,
+      ) as WpPost[] | null;
+      if (posts?.length) return sortArticlesByNewest(withoutExcludedTags(posts.map(normalizePost), options));
+      if (options?.fallbackToLatest === false) return [];
+    }
+  } catch {
+    if (options?.fallbackToLatest === false) return [];
+  }
+  if (options?.fallbackToLatest === false) return [];
+  return withoutExcludedTags(await getLatestArticles(limit), options);
+}
+
+export async function getArticlesByEditorialLocation(
+  slug: string,
+  limit = 9,
+  options?: ArticleQueryOptions,
+): Promise<Article[]> {
+  try {
+    const [terms, excludeQuery] = await Promise.all([
+      wpFetch(`/${EDITORIAL_LOCATION_TAXONOMY}?slug=${encodeURIComponent(slug)}`) as Promise<WpTermRecord[] | null>,
+      tagExcludeQuery(options),
+    ]);
+    const termIds = (terms ?? []).map((term) => term.id).join(",");
+    if (termIds) {
+      const posts = await wpFetch(
+        `/posts?${EDITORIAL_LOCATION_TAXONOMY}=${termIds}&per_page=${limit}&orderby=date&order=desc${excludeQuery}&${embedQuery}`,
       ) as WpPost[] | null;
       if (posts?.length) return sortArticlesByNewest(withoutExcludedTags(posts.map(normalizePost), options));
       if (options?.fallbackToLatest === false) return [];
