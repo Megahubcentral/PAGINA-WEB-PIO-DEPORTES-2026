@@ -100,6 +100,7 @@ export async function runRedisCommand(command: Array<string | number>) {
     },
     body: JSON.stringify(command),
     cache: "no-store",
+    signal: AbortSignal.timeout(2_500),
   });
 
   if (!response.ok) throw new Error(`Redis REST respondió ${response.status}`);

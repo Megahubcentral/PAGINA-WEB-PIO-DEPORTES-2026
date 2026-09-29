@@ -10,7 +10,20 @@ El portal funciona en modalidad headless: periodistas y editores crean entradas,
 4. Usar estos slugs de categoría para mantener la navegación automática: `nacionales`, `mlb`, `nba`, `lidom`, `futbol`, `nfl`, `tennis`, `beisbol-del-caribe` y `otros-deportes`.
 5. Seguir la guía de Pio TV más abajo para que la videoteca de portada reciba entradas de WordPress.
 
-Si la API no responde, la portada conserva contenido editorial de respaldo y nunca queda vacía.
+Si la API tarda o deja de responder, el portal sirve la última respuesta válida de WordPress (noticias reales ya publicadas) en lugar de inventar titulares. Ese respaldo vive hasta 72 horas en memoria y, si está configurado, en Upstash Redis.
+
+## Caché de WordPress
+
+La consulta a la sala de redacción se refresca cada dos minutos. Si WordPress supera 8 segundos o falla, Next.js no espera 45 segundos ni rellena NHL, MLB u otras secciones con notas de ejemplo: muestra el último JSON auténtico que sí llegó desde `piod.axworkflow.com`.
+
+Para que esa copia sobreviva entre instancias en Vercel o AWS, configurar:
+
+```text
+UPSTASH_REDIS_REST_URL=
+UPSTASH_REDIS_REST_TOKEN=
+```
+
+Sin Redis, cada instancia conserva el último snapshot en memoria mientras el proceso siga vivo. Con Redis, un apagón de varias horas sigue mostrando la portada real.
 
 ## Pio TV — guía para el equipo de WordPress
 
@@ -68,7 +81,7 @@ WORDPRESS_API_URL=https://piod.axworkflow.com/wp-json/wp/v2
 NEXT_PUBLIC_SITE_URL=https://www.piodeportes.com
 ```
 
-Si `WORDPRESS_API_URL` no está en el panel, el build usa esa misma API por defecto. El resto de claves (Instagram, Resend, Redis, AdSense, OneSignal, BALLDONTLIE) se pueden añadir después; el sitio publica igual con respaldos.
+Si `WORDPRESS_API_URL` no está en el panel, el build usa esa misma API por defecto. El resto de claves (Instagram, Resend, Redis, AdSense, OneSignal, BALLDONTLIE) se pueden añadir después. Redis es especialmente útil para conservar la última portada auténtica si WordPress se cae.
 
 ## AWS
 

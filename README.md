@@ -25,7 +25,7 @@ BALLDONTLIE_API_KEY=clave-gratuita-de-balldontlie
 THESPORTSDB_API_KEY=123
 ```
 
-La radio, los resultados deportivos y Google Ads se conectan mediante variables de entorno. Los marcadores usan las señales oficiales de MLB para MLB/LIDOM y de NHL para hockey, BALLDONTLIE para NBA/NFL y TheSportsDB para fútbol. Loterías consulta el canal oficial de Loteka e intenta el feed de Loto Real; cuando un canal oficial no puede consumirse de forma segura desde el servidor, usa un respaldo informativo claramente identificado. LEIDSA utiliza ese respaldo mientras su portal oficial no exponga un feed público. La hípica consulta las publicaciones oficiales del Hipódromo V Centenario y los resultados oficiales del Hipódromo Camarero. La caché del servidor protege los niveles gratuitos y evita llamadas repetidas.
+La radio, los resultados deportivos y Google Ads se conectan mediante variables de entorno. Los marcadores usan las señales oficiales de MLB para MLB/LIDOM y de NHL para hockey, BALLDONTLIE para NBA/NFL y TheSportsDB para fútbol. Loterías consulta el canal oficial de Loteka e intenta el feed de Loto Real; cuando un canal oficial no puede consumirse de forma segura desde el servidor, usa un respaldo informativo claramente identificado. LEIDSA utiliza ese respaldo mientras su portal oficial no exponga un feed público. La hípica consulta las publicaciones oficiales del Hipódromo V Centenario y los resultados oficiales del Hipódromo Camarero. La caché del servidor protege los niveles gratuitos, evita llamadas repetidas y guarda la última respuesta válida de WordPress para no mostrar noticias inventadas si el CMS se retrasa.
 
 ## Desarrollo
 

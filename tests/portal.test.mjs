@@ -65,7 +65,12 @@ test("the portal includes its core editorial surfaces", async () => {
   assert.match(wordpress, /side: "portada-terciaria"/);
   assert.match(wordpress, /PORTADA_PLACEMENT_TERM_IDS/);
   assert.match(wordpress, /"portada-principal": 13419/);
-  assert.match(wordpress, /timeoutMs \?\? 45000/);
+  assert.match(wordpress, /timeoutMs \?\? WP_FETCH_TIMEOUT_MS/);
+  assert.match(wordpress, /WP_FETCH_TIMEOUT_MS = 8_000/);
+  assert.match(wordpress, /readWordpressSnapshot/);
+  assert.match(wordpress, /writeWordpressSnapshot/);
+  assert.match(wordpress, /allowEditorialPreview/);
+  assert.match(wordpress, /NODE_ENV !== "production"/);
   assert.match(wordpress, /listFieldsQuery/);
   assert.match(wordpress, /_fields=id,slug,date,modified,format,title,excerpt,featured_media/);
   assert.match(wordpress, /excludeEditorialLocations: \[\.\.\.portadaPlacementSlugs\]/);
@@ -306,6 +311,29 @@ test("lottery and horse-racing results use scheduled server-side sources and inc
   assert.match(styles, /\.lottery-brand--leidsa/);
   assert.match(styles, /\.lottery-brand--primera/);
   assert.match(styles, /\.horse-meetings-grid/);
+});
+
+test("WordPress last-good cache keeps authentic newsroom data during CMS outages", async () => {
+  const [wordpress, cache, services, environment, deployment] = await Promise.all([
+    readFile(new URL("lib/wordpress.ts", root), "utf8"),
+    readFile(new URL("lib/wordpress-cache.ts", root), "utf8"),
+    readFile(new URL("lib/server-services.ts", root), "utf8"),
+    readFile(new URL(".env.example", root), "utf8"),
+    readFile(new URL("DEPLOYMENT.md", root), "utf8"),
+  ]);
+
+  assert.match(cache, /wp:last-good:v1:/);
+  assert.match(cache, /WP_LAST_GOOD_TTL_SECONDS = 60 \* 60 \* 24 \* 3/);
+  assert.match(cache, /SETEX/);
+  assert.match(wordpress, /writeWordpressSnapshot\(path, result\)/);
+  assert.match(wordpress, /return stale\(\)/);
+  assert.doesNotMatch(wordpress, /timeoutMs \?\? 45000/);
+  assert.match(wordpress, /withEditorialPreview/);
+  assert.match(wordpress, /previewOrEmpty/);
+  assert.match(services, /AbortSignal\.timeout\(2_500\)/);
+  assert.match(environment, /última respuesta válida de WordPress/);
+  assert.match(deployment, /última respuesta válida/);
+  assert.match(deployment, /72 horas/);
 });
 
 test("the homepage Instagram feed is server-side, cached and automatically refreshed", async () => {

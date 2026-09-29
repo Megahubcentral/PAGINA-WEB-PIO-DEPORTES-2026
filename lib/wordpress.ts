@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { editorialImageBank, type EditorialImage } from "./editorial-images";
+import { readWordpressSnapshot, writeWordpressSnapshot } from "./wordpress-cache";
 
 export type Article = {
   id: number;
@@ -858,36 +859,57 @@ function normalizeVideoPost(post: WpPost): VideoItem {
 }
 
 const wpJsonCache = cache(async (path: string) => wpFetchResult<unknown>(path));
+export const WP_FETCH_TIMEOUT_MS = 8_000;
 
 async function wpFetch(path: string): Promise<any> {
   const result = await wpJsonCache(path);
   return result?.data ?? null;
 }
 
+function allowEditorialPreview() {
+  return process.env.NODE_ENV !== "production";
+}
+
+function withEditorialPreview(articles: Article[], preview: Article[], limit: number) {
+  if (!allowEditorialPreview()) return sortArticlesByNewest(articles).slice(0, limit);
+  return mergeUniqueArticles(articles, preview, limit);
+}
+
+function previewOrEmpty<T>(preview: T[], limit: number) {
+  return allowEditorialPreview() ? preview.slice(0, limit) : [];
+}
+
 async function wpFetchResult<T = unknown>(
   path: string,
   options?: { timeoutMs?: number },
 ): Promise<{ data: T; total: number; totalPages: number } | null> {
-  if (!apiBase) return null;
-  const response = await fetch(`${apiBase}${path}`, {
-    next: { revalidate: 120 },
-    headers: {
-      Accept: "application/json",
-      "User-Agent": "PioDeportes/1.0 (+https://www.piodeportes.com)",
-    },
-    signal: AbortSignal.timeout(options?.timeoutMs ?? 45000),
-  });
-  if (response.status === 400) {
-    return { data: [] as unknown as T, total: 0, totalPages: 0 };
+  const stale = () => readWordpressSnapshot<T>(path);
+
+  if (!apiBase) return stale();
+
+  try {
+    const response = await fetch(`${apiBase}${path}`, {
+      next: { revalidate: 120 },
+      headers: {
+        Accept: "application/json",
+        "User-Agent": "PioDeportes/1.0 (+https://www.piodeportes.com)",
+      },
+      signal: AbortSignal.timeout(options?.timeoutMs ?? WP_FETCH_TIMEOUT_MS),
+    });
+    if (response.status === 400) return (await stale()) ?? { data: [] as unknown as T, total: 0, totalPages: 0 };
+    if (!response.ok) throw new Error(`WordPress respondió ${response.status}`);
+    const total = Number(response.headers.get("X-WP-Total") ?? 0);
+    const totalPages = Number(response.headers.get("X-WP-TotalPages") ?? 0);
+    const result = {
+      data: (await response.json()) as T,
+      total: Number.isFinite(total) ? total : 0,
+      totalPages: Number.isFinite(totalPages) ? totalPages : 0,
+    };
+    await writeWordpressSnapshot(path, result);
+    return result;
+  } catch {
+    return stale();
   }
-  if (!response.ok) throw new Error(`WordPress respondió ${response.status}`);
-  const total = Number(response.headers.get("X-WP-Total") ?? 0);
-  const totalPages = Number(response.headers.get("X-WP-TotalPages") ?? 0);
-  return {
-    data: (await response.json()) as T,
-    total: Number.isFinite(total) ? total : 0,
-    totalPages: Number.isFinite(totalPages) ? totalPages : 0,
-  };
 }
 
 function mergeUniqueArticles(primary: Article[], editorial: Article[], limit: number) {
@@ -903,11 +925,10 @@ export async function getLatestArticles(limit = 12): Promise<Article[]> {
     const posts = await wpFetch(
       `/posts?per_page=${limit}&orderby=date&order=desc&${listFieldsQuery}`,
     );
-    return posts?.length
-      ? mergeUniqueArticles(await postsToArticles(posts), localArticleArchive, limit)
-      : sortArticlesByNewest(localArticleArchive).slice(0, limit);
+    const articles = posts?.length ? await postsToArticles(posts) : [];
+    return withEditorialPreview(articles, sortArticlesByNewest(localArticleArchive), limit);
   } catch {
-    return sortArticlesByNewest(localArticleArchive).slice(0, limit);
+    return previewOrEmpty(sortArticlesByNewest(localArticleArchive), limit);
   }
 }
 
@@ -1106,15 +1127,14 @@ export async function getBasketballArticles(limit = 5, options?: ArticleQueryOpt
       ) as WpPost[] | null;
       if (posts?.length) {
         const fromWordpress = await postsToArticles(posts, options);
-        if (fromWordpress.length >= cap) return fromWordpress.slice(0, cap);
-        return mergeUniqueArticles(fromWordpress, localBasketball, cap);
+        return withEditorialPreview(fromWordpress, localBasketball, cap);
       }
     }
   } catch {
     // Fall through to the local basketball archive.
   }
 
-  return localBasketball.slice(0, cap);
+  return previewOrEmpty(localBasketball, cap);
 }
 
 export async function getArticlesByTag(slug: string, limit = 9, options?: ArticleQueryOptions): Promise<Article[]> {
@@ -1175,9 +1195,11 @@ export async function getArticleBySlug(slug: string): Promise<Article | undefine
     );
     if (posts?.[0]) return normalizePost(posts[0]);
   } catch {
-    // The local editorial preview remains available if WordPress is offline.
+    // Last-good WordPress JSON is returned by wpFetch before this catch.
   }
-  return localArticleArchive.find((article) => article.slug === slug);
+  return allowEditorialPreview()
+    ? localArticleArchive.find((article) => article.slug === slug)
+    : undefined;
 }
 
 function articleTagSet(article: Article) {
@@ -1284,10 +1306,10 @@ export async function getRelatedArticles(article: Article, limit = 4): Promise<A
     ]);
     const fromWordpress = await postsToArticles(pools.flatMap((posts) => posts ?? []));
     const related = rankRelatedArticles(article, fromWordpress, cap);
-    if (related.length >= cap) return related;
+    if (related.length >= cap || !allowEditorialPreview()) return related;
     return mergeUniqueArticles(related, localRelated, cap);
   } catch {
-    return localRelated;
+    return previewOrEmpty(localRelated, cap);
   }
 }
 
@@ -1360,15 +1382,15 @@ export async function getInternationalArticlePage(page = 1, perPage = internatio
       }
     }
   } catch {
-    // Fall through to the local international archive.
+    // Last-good WordPress JSON is returned by wpFetch before this catch.
   }
 
-  return paginateArticles(localInternational, safePage, safePerPage);
+  return paginateArticles(previewOrEmpty(localInternational, localInternational.length), safePage, safePerPage);
 }
 
 export async function getInternationalArticles(limit = 5, options?: ArticleQueryOptions): Promise<Article[]> {
   const { articles } = await getInternationalArticlePage(1, limit, options);
-  if (articles.length >= limit) return articles.slice(0, limit);
+  if (articles.length >= limit || !allowEditorialPreview()) return articles.slice(0, limit);
   return mergeUniqueArticles(articles, withoutExcludedTags(localInternationalArticles(), options), limit);
 }
 
@@ -1411,13 +1433,13 @@ export async function getCategoryArticles(slug: string, options?: ArticleQueryOp
       );
       if (posts?.length) {
         const normalized = await postsToArticles(posts, options);
-        return mergeUniqueArticles(normalized, categoryEditorial, articlesPerCategory);
+        return withEditorialPreview(normalized, categoryEditorial, articlesPerCategory);
       }
     }
   } catch {
-    // Fall through to representative local content.
+    // Last-good WordPress JSON is returned by wpFetch before this catch.
   }
-  return categoryEditorial.slice(0, articlesPerCategory);
+  return previewOrEmpty(categoryEditorial, articlesPerCategory);
 }
 
 const videoTermSlugs = "videos,video";
@@ -1469,9 +1491,9 @@ export async function getVideoItems(limit = 8): Promise<VideoItem[]> {
     const posts = await fetchWordpressVideoPosts(limit);
     if (posts.length) return sortByNewest(posts.map(normalizeVideoPost));
   } catch {
-    // Keep the video section available while WordPress is offline or unconfigured.
+    // Last-good WordPress JSON is returned by wpFetch before this catch.
   }
-  return sortByNewest(fallbackVideos).slice(0, limit);
+  return previewOrEmpty(sortByNewest(fallbackVideos), limit);
 }
 
 export async function getVideoBySlug(slug: string): Promise<VideoItem | undefined> {
@@ -1481,9 +1503,11 @@ export async function getVideoBySlug(slug: string): Promise<VideoItem | undefine
     );
     if (posts?.[0]) return normalizeVideoPost(posts[0]);
   } catch {
-    // Use the editorial preview below.
+    // Last-good WordPress JSON is returned by wpFetch before this catch.
   }
-  return fallbackVideos.find((video) => video.slug === slug);
+  return allowEditorialPreview()
+    ? fallbackVideos.find((video) => video.slug === slug)
+    : undefined;
 }
 
 const sitemapPostFields = "_fields=id,slug,date,modified,format,title";
@@ -1593,9 +1617,9 @@ export async function getSitemapNewsChunk(chunk: number): Promise<SitemapEntry[]
       .map(toSitemapEntry)
       .filter((entry): entry is SitemapEntry => Boolean(entry));
     if (articles.length) return articles;
-    return safeChunk === 1 ? localNewsEntries() : [];
+    return allowEditorialPreview() && safeChunk === 1 ? localNewsEntries() : [];
   } catch {
-    return safeChunk === 1 ? localNewsEntries() : [];
+    return allowEditorialPreview() && safeChunk === 1 ? localNewsEntries() : [];
   }
 }
 
@@ -1604,9 +1628,9 @@ export async function getSitemapVideos(): Promise<SitemapEntry[]> {
     const videos = (await getWordpressVideoPosts())
       .map(toSitemapEntry)
       .filter((entry): entry is SitemapEntry => Boolean(entry));
-    return videos.length ? videos : localVideoEntries();
+    return videos.length ? videos : (allowEditorialPreview() ? localVideoEntries() : []);
   } catch {
-    return localVideoEntries();
+    return allowEditorialPreview() ? localVideoEntries() : [];
   }
 }
 
