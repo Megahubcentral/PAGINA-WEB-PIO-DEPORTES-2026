@@ -18,6 +18,7 @@ import { getInstagramFeed } from "../lib/instagram-provider";
 
 export const metadata: Metadata = homeMetadata();
 export const revalidate = 120;
+export const maxDuration = 60;
 
 function takeUnique(pool: Article[], count: number, used: Set<string>) {
   const selected: Article[] = [];
@@ -93,10 +94,12 @@ function HomeAdSense({ unit }: { unit: (typeof HOME_ADSENSE)[keyof typeof HOME_A
 
 export default async function Home() {
   const nbaQuery = { ...homeNewsQuery, exactCategory: true };
+  const [portadaHeroArticles, portadaBelowArticles, portadaSideArticles] = await Promise.all([
+    getArticlesByEditorialLocation(PORTADA_PLACEMENTS.hero, 1, { fallbackToLatest: false }),
+    getArticlesByEditorialLocation(PORTADA_PLACEMENTS.below, 2, { fallbackToLatest: false }),
+    getArticlesByEditorialLocation(PORTADA_PLACEMENTS.side, 2, { fallbackToLatest: false }),
+  ]);
   const [
-    portadaHeroArticles,
-    portadaBelowArticles,
-    portadaSideArticles,
     destacadosArticles,
     videos,
     nationalArticles,
@@ -112,9 +115,6 @@ export default async function Home() {
     lotteryFeed,
     instagramFeed,
   ] = await Promise.all([
-    getArticlesByEditorialLocation(PORTADA_PLACEMENTS.hero, 1, { fallbackToLatest: false }),
-    getArticlesByEditorialLocation(PORTADA_PLACEMENTS.below, 2, { fallbackToLatest: false }),
-    getArticlesByEditorialLocation(PORTADA_PLACEMENTS.side, 2, { fallbackToLatest: false }),
     getArticlesByTag("destacados", 8, homeNewsQuery),
     getVideoItems(6),
     getCategoryArticles("nacionales", homeNewsQuery),

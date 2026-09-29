@@ -607,6 +607,10 @@ type WpPost = {
   title?: { rendered?: string };
   excerpt?: { rendered?: string };
   content?: { rendered?: string };
+  featured_media?: number;
+  categories?: number[];
+  tags?: number[];
+  ubicacion_editorial?: number[];
   _embedded?: {
     "wp:featuredmedia"?: Array<{
       source_url?: string;
@@ -853,8 +857,10 @@ function normalizeVideoPost(post: WpPost): VideoItem {
   };
 }
 
+const wpJsonCache = cache(async (path: string) => wpFetchResult<unknown>(path));
+
 async function wpFetch(path: string): Promise<any> {
-  const result = await wpFetchResult<any>(path);
+  const result = await wpJsonCache(path);
   return result?.data ?? null;
 }
 
@@ -865,8 +871,11 @@ async function wpFetchResult<T = unknown>(
   if (!apiBase) return null;
   const response = await fetch(`${apiBase}${path}`, {
     next: { revalidate: 120 },
-    headers: { Accept: "application/json" },
-    signal: AbortSignal.timeout(options?.timeoutMs ?? 8000),
+    headers: {
+      Accept: "application/json",
+      "User-Agent": "PioDeportes/1.0 (+https://www.piodeportes.com)",
+    },
+    signal: AbortSignal.timeout(options?.timeoutMs ?? 45000),
   });
   if (response.status === 400) {
     return { data: [] as unknown as T, total: 0, totalPages: 0 };
@@ -892,10 +901,10 @@ function mergeUniqueArticles(primary: Article[], editorial: Article[], limit: nu
 export async function getLatestArticles(limit = 12): Promise<Article[]> {
   try {
     const posts = await wpFetch(
-      `/posts?per_page=${limit}&orderby=date&order=desc&_embed=wp:featuredmedia,wp:term,author`,
+      `/posts?per_page=${limit}&orderby=date&order=desc&${listFieldsQuery}`,
     );
     return posts?.length
-      ? mergeUniqueArticles(posts.map(normalizePost), localArticleArchive, limit)
+      ? mergeUniqueArticles(await postsToArticles(posts), localArticleArchive, limit)
       : sortArticlesByNewest(localArticleArchive).slice(0, limit);
   } catch {
     return sortArticlesByNewest(localArticleArchive).slice(0, limit);
@@ -921,6 +930,15 @@ export const PORTADA_PLACEMENTS = {
   side: "portada-terciaria",
 } as const;
 
+type PortadaPlacementSlug = (typeof PORTADA_PLACEMENTS)[keyof typeof PORTADA_PLACEMENTS];
+
+/** Stable WP term IDs so Portada does not wait on the slow taxonomy listing. */
+export const PORTADA_PLACEMENT_TERM_IDS: Record<PortadaPlacementSlug, number> = {
+  "portada-principal": 13419,
+  "portada-secundaria": 13420,
+  "portada-terciaria": 13421,
+};
+
 export const portadaPlacementSlugs = [
   PORTADA_PLACEMENTS.hero,
   PORTADA_PLACEMENTS.below,
@@ -943,10 +961,75 @@ async function getTagIdsBySlug(slugs: string[]) {
 async function getTaxonomyTermIds(taxonomy: string, slugs: string[]) {
   const unique = [...new Set(slugs.map((slug) => slug.trim()).filter(Boolean))];
   if (!unique.length) return [];
+  if (taxonomy === EDITORIAL_LOCATION_TAXONOMY) {
+    const known = unique.flatMap((slug) => {
+      const id = PORTADA_PLACEMENT_TERM_IDS[slug as PortadaPlacementSlug];
+      return id ? [id] : [];
+    });
+    if (known.length === unique.length) return [...new Set(known)];
+  }
   const batches = await Promise.all(
     unique.map((slug) => wpFetch(`/${taxonomy}?slug=${encodeURIComponent(slug)}`) as Promise<WpTermRecord[] | null>),
   );
   return [...new Set(batches.flatMap((terms) => (terms ?? []).map((term) => term.id).filter(Boolean)))];
+}
+
+async function decoratePosts(posts: WpPost[]): Promise<WpPost[]> {
+  const mediaIds = [
+    ...new Set(posts.map((post) => post.featured_media).filter((id): id is number => Boolean(id))),
+  ];
+  let mediaRecords: Array<{
+    id?: number;
+    source_url?: string;
+    alt_text?: string;
+    media_details?: NonNullable<NonNullable<WpPost["_embedded"]>["wp:featuredmedia"]>[number]["media_details"];
+  }> = [];
+  try {
+    if (mediaIds.length) {
+      mediaRecords = (await wpFetch(
+        `/media?include=${mediaIds.join(",")}&per_page=${Math.min(100, mediaIds.length)}&_fields=id,source_url,alt_text,media_details`,
+      )) ?? [];
+    }
+  } catch {
+    mediaRecords = [];
+  }
+  const mediaById = new Map(
+    mediaRecords.filter((item) => item.id).map((item) => [item.id as number, item]),
+  );
+  const categories = await getWordpressCategories().catch(() => [] as WordpressCategory[]);
+  const categoryById = new Map(categories.map((category) => [category.id, category]));
+  const locationById = new Map(
+    (Object.entries(PORTADA_PLACEMENT_TERM_IDS) as Array<[PortadaPlacementSlug, number]>).map(
+      ([slug, id]) => [id, slug],
+    ),
+  );
+
+  return posts.map((post) => {
+    const media = post.featured_media ? mediaById.get(post.featured_media) : undefined;
+    const categoryTerms: WpTerm[] = (post.categories ?? []).flatMap((id) => {
+      const category = categoryById.get(id);
+      return category ? [{ taxonomy: "category", name: category.name, slug: category.slug }] : [];
+    });
+    const locationTerms: WpTerm[] = (post.ubicacion_editorial ?? []).flatMap((id) => {
+      const slug = locationById.get(id);
+      return slug ? [{ taxonomy: EDITORIAL_LOCATION_TAXONOMY, name: slug, slug }] : [];
+    });
+    return {
+      ...post,
+      _embedded: {
+        "wp:featuredmedia": media
+          ? [{ source_url: media.source_url, alt_text: media.alt_text, media_details: media.media_details }]
+          : [],
+        "wp:term": [categoryTerms, locationTerms],
+        author: [{ name: "Pío Deportes" }],
+      },
+    };
+  });
+}
+
+async function postsToArticles(posts: WpPost[] | null | undefined, options?: ArticleQueryOptions) {
+  if (!posts?.length) return [];
+  return withoutExcludedTags((await decoratePosts(posts)).map(normalizePost), options);
 }
 
 async function tagExcludeQuery(options?: ArticleQueryOptions) {
@@ -1019,10 +1102,10 @@ export async function getBasketballArticles(limit = 5, options?: ArticleQueryOpt
     ]);
     if (categoryIds.length) {
       const posts = await wpFetch(
-        `/posts?categories=${categoryIds.join(",")}&per_page=${cap}&orderby=date&order=desc${excludeQuery}&${embedQuery}`,
+        `/posts?categories=${categoryIds.join(",")}&per_page=${cap}&orderby=date&order=desc${excludeQuery}&${listFieldsQuery}`,
       ) as WpPost[] | null;
       if (posts?.length) {
-        const fromWordpress = withoutExcludedTags(posts.map(normalizePost), options);
+        const fromWordpress = await postsToArticles(posts, options);
         if (fromWordpress.length >= cap) return fromWordpress.slice(0, cap);
         return mergeUniqueArticles(fromWordpress, localBasketball, cap);
       }
@@ -1043,9 +1126,9 @@ export async function getArticlesByTag(slug: string, limit = 9, options?: Articl
     const tagIds = (tagTerms ?? []).map((term) => term.id).join(",");
     if (tagIds) {
       const posts = await wpFetch(
-        `/posts?tags=${tagIds}&per_page=${limit}&orderby=date&order=desc${excludeQuery}&${embedQuery}`,
+        `/posts?tags=${tagIds}&per_page=${limit}&orderby=date&order=desc${excludeQuery}&${listFieldsQuery}`,
       ) as WpPost[] | null;
-      if (posts?.length) return sortArticlesByNewest(withoutExcludedTags(posts.map(normalizePost), options));
+      if (posts?.length) return sortArticlesByNewest(await postsToArticles(posts, options));
       if (options?.fallbackToLatest === false) return [];
     }
   } catch {
@@ -1061,16 +1144,21 @@ export async function getArticlesByEditorialLocation(
   options?: ArticleQueryOptions,
 ): Promise<Article[]> {
   try {
-    const [terms, excludeQuery] = await Promise.all([
-      wpFetch(`/${EDITORIAL_LOCATION_TAXONOMY}?slug=${encodeURIComponent(slug)}`) as Promise<WpTermRecord[] | null>,
+    const [termIds, excludeQuery] = await Promise.all([
+      getTaxonomyTermIds(EDITORIAL_LOCATION_TAXONOMY, [slug]),
       tagExcludeQuery(options),
     ]);
-    const termIds = (terms ?? []).map((term) => term.id).join(",");
-    if (termIds) {
+    if (termIds.length) {
       const posts = await wpFetch(
-        `/posts?${EDITORIAL_LOCATION_TAXONOMY}=${termIds}&per_page=${limit}&orderby=date&order=desc${excludeQuery}&${embedQuery}`,
+        `/posts?${EDITORIAL_LOCATION_TAXONOMY}=${termIds.join(",")}&per_page=${limit}&orderby=date&order=desc${excludeQuery}&${listFieldsQuery}`,
       ) as WpPost[] | null;
-      if (posts?.length) return sortArticlesByNewest(withoutExcludedTags(posts.map(normalizePost), options));
+      if (posts?.length) {
+        const articles = (await postsToArticles(posts, options)).map((article) => ({
+          ...article,
+          editorialLocations: [...new Set([...(article.editorialLocations ?? []), slug])],
+        }));
+        return sortArticlesByNewest(articles);
+      }
       if (options?.fallbackToLatest === false) return [];
     }
   } catch {
@@ -1185,16 +1273,16 @@ export async function getRelatedArticles(article: Article, limit = 4): Promise<A
     const pools = await Promise.all([
       categoryIds.length
         ? (wpFetch(
-            `/posts?categories=${categoryIds.join(",")}${excludeQuery}&per_page=${Math.max(12, cap + 8)}&orderby=date&order=desc&${embedQuery}`,
+            `/posts?categories=${categoryIds.join(",")}${excludeQuery}&per_page=${Math.max(12, cap + 8)}&orderby=date&order=desc&${listFieldsQuery}`,
           ) as Promise<WpPost[] | null>)
         : Promise.resolve([] as WpPost[] | null),
       tagIds.length
         ? (wpFetch(
-            `/posts?tags=${tagIds.join(",")}${excludeQuery}&per_page=${cap + 4}&orderby=date&order=desc&${embedQuery}`,
+            `/posts?tags=${tagIds.join(",")}${excludeQuery}&per_page=${cap + 4}&orderby=date&order=desc&${listFieldsQuery}`,
           ) as Promise<WpPost[] | null>)
         : Promise.resolve([] as WpPost[] | null),
     ]);
-    const fromWordpress = pools.flatMap((posts) => (posts ?? []).map(normalizePost));
+    const fromWordpress = await postsToArticles(pools.flatMap((posts) => posts ?? []));
     const related = rankRelatedArticles(article, fromWordpress, cap);
     if (related.length >= cap) return related;
     return mergeUniqueArticles(related, localRelated, cap);
@@ -1204,6 +1292,8 @@ export async function getRelatedArticles(article: Article, limit = 4): Promise<A
 }
 
 const embedQuery = "_embed=wp:featuredmedia,wp:term,author";
+const listFieldsQuery =
+  "_fields=id,slug,date,modified,format,title,excerpt,featured_media,categories,tags,ubicacion_editorial";
 export const internationalPageSize = 12;
 
 export type ArticlePage = {
@@ -1245,13 +1335,10 @@ export async function getInternationalArticlePage(page = 1, perPage = internatio
     ]);
     const excludeQuery = excludeIds.length ? `&categories_exclude=${excludeIds.join(",")}` : "";
     const result = await wpFetchResult<WpPost[]>(
-      `/posts?orderby=date&order=desc${excludeQuery}${tagExclude}&per_page=${safePerPage}&page=${safePage}&${embedQuery}`,
+      `/posts?orderby=date&order=desc${excludeQuery}${tagExclude}&per_page=${safePerPage}&page=${safePage}&${listFieldsQuery}`,
     );
     if (result && Array.isArray(result.data)) {
-      const articles = withoutExcludedTags(
-        result.data.map(normalizePost).filter((article) => !isNationalArticle(article)),
-        options,
-      );
+      const articles = (await postsToArticles(result.data, options)).filter((article) => !isNationalArticle(article));
       if (articles.length || result.totalPages > 0 || result.total > 0) {
         const totalPages = Math.max(1, result.totalPages || (result.total ? Math.ceil(result.total / safePerPage) : 1));
         return {
@@ -1320,10 +1407,10 @@ export async function getCategoryArticles(slug: string, options?: ArticleQueryOp
       : [];
     if (categoryIds.length) {
       const posts = await wpFetch(
-        `/posts?categories=${categoryIds.join(",")}&per_page=${articlesPerCategory}&orderby=date&order=desc${excludeQuery}&${embedQuery}`,
+        `/posts?categories=${categoryIds.join(",")}&per_page=${articlesPerCategory}&orderby=date&order=desc${excludeQuery}&${listFieldsQuery}`,
       );
       if (posts?.length) {
-        const normalized = withoutExcludedTags(posts.map(normalizePost), options);
+        const normalized = await postsToArticles(posts, options);
         return mergeUniqueArticles(normalized, categoryEditorial, articlesPerCategory);
       }
     }

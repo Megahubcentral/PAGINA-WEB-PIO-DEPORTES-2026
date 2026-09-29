@@ -63,6 +63,11 @@ test("the portal includes its core editorial surfaces", async () => {
   assert.match(wordpress, /hero: "portada-principal"/);
   assert.match(wordpress, /below: "portada-secundaria"/);
   assert.match(wordpress, /side: "portada-terciaria"/);
+  assert.match(wordpress, /PORTADA_PLACEMENT_TERM_IDS/);
+  assert.match(wordpress, /"portada-principal": 13419/);
+  assert.match(wordpress, /timeoutMs \?\? 45000/);
+  assert.match(wordpress, /listFieldsQuery/);
+  assert.match(wordpress, /_fields=id,slug,date,modified,format,title,excerpt,featured_media/);
   assert.match(wordpress, /excludeEditorialLocations: \[\.\.\.portadaPlacementSlugs\]/);
   assert.match(wordpress, /tags_exclude/);
   assert.match(category, /getCategoryArticles\(slug\)/);
