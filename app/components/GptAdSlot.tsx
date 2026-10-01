@@ -32,7 +32,7 @@ declare global {
 function getGoogletag(): Googletag {
   const existing = window.googletag;
   if (existing?.cmd) return existing;
-  const googletag = { cmd: [] } as Googletag;
+  const googletag = { cmd: [] } as unknown as Googletag;
   window.googletag = googletag;
   return googletag;
 }
