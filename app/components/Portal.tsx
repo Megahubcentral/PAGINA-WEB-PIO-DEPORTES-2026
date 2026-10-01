@@ -2,8 +2,9 @@
 import Link from "next/link";
 import { getLatestArticles, type Article } from "../../lib/wordpress";
 import { PushNotificationButton } from "./Engagement";
-import { AdSlot, BreakingTicker, CurrentDate, LiveInfo, NewsletterForm } from "./LiveWidgets";
-import { cometaHeaderAd } from "../../lib/direct-ads";
+import { BreakingTicker, CurrentDate, LiveInfo, NewsletterForm } from "./LiveWidgets";
+import { GptAdSlot } from "./GptAdSlot";
+import { GPT_HEADER_SLOT } from "../../lib/gpt";
 import { ChevronDownIcon } from "@heroicons/react/24/outline";
 import { getNavTree, navItemLinks, type NavLink } from "../../lib/nav-tree";
 import { MainNav } from "./MainNav";
@@ -34,7 +35,7 @@ export async function SiteHeader() {
           <Link className="brand" href="/" aria-label="Pío Deportes, portada">
             <img src="/pio-logo-original.png" alt="Pío Deportes" width="210" height="105" />
           </Link>
-          <div className="masthead-ad"><AdSlot size="728 × 90" creative={cometaHeaderAd} /></div>
+          <div className="masthead-ad"><GptAdSlot slot={GPT_HEADER_SLOT} /></div>
           <form className="search" action="/buscar" role="search">
             <label className="sr-only" htmlFor="site-search">Buscar noticias</label>
             <input id="site-search" name="q" type="search" placeholder="Buscar" />

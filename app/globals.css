@@ -49,6 +49,8 @@ button, input, select, textarea { font: inherit; }
 .masthead-ad .ad-slot { min-height: 74px; }
 .masthead-ad .ad-slot-direct { min-height: 0; }
 .masthead-ad .ad-slot-direct img { width: 100%; height: auto; max-height: 90px; object-fit: contain; }
+.masthead-ad .gpt-ad { min-width: 300px; min-height: 50px; width: 100%; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.masthead-ad .gpt-ad iframe { max-width: 100%; }
 .search { height: 42px; border-bottom: 2px solid var(--ink); display: flex; align-items: center; }
 .search input { border: 0; outline: 0; width: 100%; min-width: 0; background: transparent; color: var(--ink); }
 .search input::placeholder { color: #95979c; }

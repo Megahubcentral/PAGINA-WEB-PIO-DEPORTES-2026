@@ -30,7 +30,9 @@ test("the portal includes its core editorial surfaces", async () => {
   assert.match(page, /href="\/categoria\/baloncesto"/);
   assert.match(page, /href="\/categoria\/nhl"/);
   assert.match(portal, /section-heading-title/);
-  assert.match(portal, /cometaHeaderAd/);
+  assert.match(portal, /GptAdSlot/);
+  assert.match(portal, /GPT_HEADER_SLOT/);
+  assert.match(layout, /securepubads.g.doubleclick.net\/tag\/js\/gpt.js/);
   assert.match(page, /getCategoryArticles\("mlb", homeNewsQuery\)/);
   assert.match(page, /getCategoryArticles\("nba", nbaQuery\)/);
   assert.match(page, /getCategoryArticles\("lidom", homeNewsQuery\)/);
