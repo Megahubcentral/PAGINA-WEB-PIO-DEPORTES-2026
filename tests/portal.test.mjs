@@ -5,7 +5,7 @@ import test from "node:test";
 const root = new URL("../", import.meta.url);
 
 test("the portal includes its core editorial surfaces", async () => {
-  const [page, layout, portal, widgets, wordpress, styles, category, article] = await Promise.all([
+  const [page, layout, portal, widgets, wordpress, styles, category, article, gpt] = await Promise.all([
     readFile(new URL("app/page.tsx", root), "utf8"),
     readFile(new URL("app/layout.tsx", root), "utf8"),
     readFile(new URL("app/components/Portal.tsx", root), "utf8"),
@@ -14,6 +14,7 @@ test("the portal includes its core editorial surfaces", async () => {
     readFile(new URL("app/globals.css", root), "utf8"),
     readFile(new URL("app/categoria/[slug]/page.tsx", root), "utf8"),
     readFile(new URL("app/noticias/[slug]/page.tsx", root), "utf8"),
+    readFile(new URL("lib/gpt.ts", root), "utf8"),
   ]);
 
   assert.match(page, /aesDominicanaWideAd/);
@@ -32,6 +33,10 @@ test("the portal includes its core editorial surfaces", async () => {
   assert.match(portal, /section-heading-title/);
   assert.match(portal, /GptAdSlot/);
   assert.match(portal, /GPT_HEADER_SLOT/);
+  assert.match(page, /GptAdSlot/);
+  assert.match(page, /GPT_PORTADA_SIDE_SLOT/);
+  assert.match(gpt, /\/23373962570\/PIO-Portada-Side-Ad/);
+  assert.match(gpt, /div-gpt-ad-1791244504391-0/);
   assert.match(layout, /securepubads.g.doubleclick.net\/tag\/js\/gpt.js/);
   assert.match(page, /getCategoryArticles\("mlb", homeNewsQuery\)/);
   assert.match(page, /getCategoryArticles\("nba", nbaQuery\)/);

@@ -5,8 +5,10 @@ import Link from "next/link";
 import { homeMetadata } from "../lib/seo";
 import { AudioPlayer, AdSlot } from "./components/LiveWidgets";
 import { RotatingHomeSidebarAd } from "./components/DirectAds";
+import { GptAdSlot } from "./components/GptAdSlot";
 import { HOME_ADSENSE } from "../lib/adsense";
 import { aesDominicanaWideAd } from "../lib/direct-ads";
+import { GPT_PORTADA_SIDE_SLOT } from "../lib/gpt";
 import { ArticleCard, SectionHeading, SiteFooter, SiteHeader } from "./components/Portal";
 import { ScoreStrip } from "./components/Scoreboard";
 import { VideoCarousel } from "./components/VideoCarousel";
@@ -209,7 +211,7 @@ export default async function Home() {
               </div>
               ) : null}
               <div className="lead-ad">
-                <RotatingHomeSidebarAd lane="primary" />
+                <GptAdSlot slot={GPT_PORTADA_SIDE_SLOT} />
               </div>
             </aside>
           </div>

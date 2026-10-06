@@ -68,7 +68,7 @@ export function GptAdSlot({ slot }: { slot: GptSlotConfig }) {
     <div
       id={slot.elementId}
       className="gpt-ad"
-      style={{ minWidth: 300, minHeight: 50 }}
+      style={{ minWidth: slot.minWidth, minHeight: slot.minHeight }}
       aria-label="Publicidad"
     />
   );

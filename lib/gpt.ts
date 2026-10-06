@@ -10,12 +10,16 @@ export type GptSlotConfig = {
   elementId: string;
   sizes: readonly GptSize[];
   sizeMapping: readonly GptSizeMapping[];
+  minWidth: number;
+  minHeight: number;
 };
 
 /** Header masthead unit generated in Google Ad Manager as PIO-H1. */
 export const GPT_HEADER_SLOT: GptSlotConfig = {
   adUnitPath: "/23373962570/PIO-H1",
   elementId: "div-gpt-ad-1790812590707-0",
+  minWidth: 300,
+  minHeight: 50,
   sizes: [
     [728, 90],
     [468, 60],
@@ -28,4 +32,14 @@ export const GPT_HEADER_SLOT: GptSlotConfig = {
     { viewport: [431, 0], sizes: [[320, 50]] },
     { viewport: [0, 0], sizes: [[300, 50]] },
   ],
+};
+
+/** Portada sidebar unit generated in Google Ad Manager as PIO-Portada-Side-Ad. */
+export const GPT_PORTADA_SIDE_SLOT: GptSlotConfig = {
+  adUnitPath: "/23373962570/PIO-Portada-Side-Ad",
+  elementId: "div-gpt-ad-1791244504391-0",
+  minWidth: 300,
+  minHeight: 600,
+  sizes: [[300, 600]],
+  sizeMapping: [{ viewport: [0, 0], sizes: [[300, 600]] }],
 };
