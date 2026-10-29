@@ -38,12 +38,14 @@ test("the portal includes its core editorial surfaces", async () => {
   assert.match(gpt, /\/23373962570\/PIO-Portada-Side-Ad/);
   assert.match(gpt, /div-gpt-ad-1791244504391-0/);
   assert.match(layout, /securepubads.g.doubleclick.net\/tag\/js\/gpt.js/);
-  assert.match(page, /getCategoryArticles\("mlb", homeNewsQuery\)/);
+  assert.match(page, /homeSectionLimit = 8/);
+  assert.match(page, /homeSectionQuery = \{ \.\.\.homeNewsQuery, limit: homeSectionLimit \}/);
+  assert.match(page, /getCategoryArticles\("mlb", homeSectionQuery\)/);
   assert.match(page, /getCategoryArticles\("nba", nbaQuery\)/);
-  assert.match(page, /getCategoryArticles\("lidom", homeNewsQuery\)/);
-  assert.match(page, /getCategoryArticles\("futbol-soccer", homeNewsQuery\)/);
-  assert.match(page, /getCategoryArticles\("nfl", homeNewsQuery\)/);
-  assert.match(page, /getCategoryArticles\("nhl", homeNewsQuery\)/);
+  assert.match(page, /getCategoryArticles\("lidom", homeSectionQuery\)/);
+  assert.match(page, /getCategoryArticles\("futbol-soccer", homeSectionQuery\)/);
+  assert.match(page, /getCategoryArticles\("nfl", homeSectionQuery\)/);
+  assert.match(page, /getCategoryArticles\("nhl", homeSectionQuery\)/);
   assert.match(page, /sortByNewest/);
   assert.match(page, /\[\.\.\.tennisArticles, \.\.\.caribbeanArticles, \.\.\.otherArticles\]/);
   assert.doesNotMatch(page, /interleaveArticlePools/);
@@ -341,6 +343,9 @@ test("WordPress last-good cache keeps authentic newsroom data during CMS outages
   assert.match(environment, /última respuesta válida de WordPress/);
   assert.match(deployment, /última respuesta válida/);
   assert.match(deployment, /72 horas/);
+  assert.match(deployment, /4\.000 entradas más recientes/);
+  assert.match(wordpress, /limit\?: number/);
+  assert.match(wordpress, /per_page=\$\{cap\}/);
 });
 
 test("the homepage Instagram feed is server-side, cached and automatically refreshed", async () => {
@@ -417,6 +422,15 @@ test("SEO technical signals cover canonicals, structured data, sitemaps and real
   assert.match(wordpress, /getNewsSitemapEntries/);
   assert.match(wordpress, /newsWindowMs = 48/);
   assert.match(wordpress, /SITEMAP_NEWS_CHUNK_SIZE = 1000/);
+  assert.match(wordpress, /WP_SITEMAP_MAX_PAGES = 40/);
+  assert.match(wordpress, /WP_SITEMAP_PAGE_CONCURRENCY = 2/);
+  assert.match(wordpress, /mapWithConcurrency/);
+  assert.match(wordpress, /categoryQueryLimit/);
+  assert.match(wordpress, /getTermIdsBySlug/);
+  assert.match(wordpress, /videoSitemapMaxPages = 4/);
+  assert.match(sitemapLib, /SITEMAP_REVALIDATE_SECONDS = 3600/);
+  assert.match(sitemapIndex, /export const revalidate = 3600/);
+  assert.match(sitemapNewsChunk, /export const revalidate = 3600/);
   assert.doesNotMatch(wordpress, /sitemapPageCap = 50/);
   assert.doesNotMatch(wordpress, /getSitemapContent/);
   assert.doesNotMatch(wordpress, /\?\? fallbackArticles\[0\]/);

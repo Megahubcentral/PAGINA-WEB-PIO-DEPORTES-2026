@@ -25,6 +25,8 @@ UPSTASH_REDIS_REST_TOKEN=
 
 Sin Redis, cada instancia conserva el último snapshot en memoria mientras el proceso siga vivo. Con Redis, un apagón de varias horas sigue mostrando la portada real.
 
+La portada pide a WordPress solo las notas que muestra (8 por sección, en dos tandas) y no recorre el archivo completo. Los sitemaps de noticias cubren las 4.000 entradas más recientes y se regeneran cada hora, con como máximo dos páginas REST a la vez. Así el CMS de Lightsail no se llena de workers cuando Google o Vercel refrescan el índice.
+
 ## Pio TV — guía para el equipo de WordPress
 
 Pio TV (bloque de portada y `/videos`) **no lee la Mediateca sola**. Un `.mp4` subido a Medios no aparece hasta que forma parte de una **entrada publicada**.

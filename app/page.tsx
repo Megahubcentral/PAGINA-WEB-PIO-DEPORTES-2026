@@ -94,8 +94,11 @@ function HomeAdSense({ unit }: { unit: (typeof HOME_ADSENSE)[keyof typeof HOME_A
   );
 }
 
+const homeSectionLimit = 8;
+const homeSectionQuery = { ...homeNewsQuery, limit: homeSectionLimit };
+
 export default async function Home() {
-  const nbaQuery = { ...homeNewsQuery, exactCategory: true };
+  const nbaQuery = { ...homeNewsQuery, exactCategory: true, limit: homeSectionLimit };
   const [portadaHeroArticles, portadaBelowArticles, portadaSideArticles] = await Promise.all([
     getArticlesByEditorialLocation(PORTADA_PLACEMENTS.hero, 1, { fallbackToLatest: false }),
     getArticlesByEditorialLocation(PORTADA_PLACEMENTS.below, 2, { fallbackToLatest: false }),
@@ -108,29 +111,32 @@ export default async function Home() {
     mlbArticles,
     nbaArticles,
     lidomArticles,
+    lotteryFeed,
+    instagramFeed,
+  ] = await Promise.all([
+    getArticlesByTag("destacados", 8, homeNewsQuery),
+    getVideoItems(6),
+    getCategoryArticles("nacionales", homeSectionQuery),
+    getCategoryArticles("mlb", homeSectionQuery),
+    getCategoryArticles("nba", nbaQuery),
+    getCategoryArticles("lidom", homeSectionQuery),
+    getLotteryFeed(),
+    getInstagramFeed(),
+  ]);
+  const [
     footballArticles,
     nflArticles,
     hockeyArticles,
     tennisArticles,
     caribbeanArticles,
     otherArticles,
-    lotteryFeed,
-    instagramFeed,
   ] = await Promise.all([
-    getArticlesByTag("destacados", 8, homeNewsQuery),
-    getVideoItems(6),
-    getCategoryArticles("nacionales", homeNewsQuery),
-    getCategoryArticles("mlb", homeNewsQuery),
-    getCategoryArticles("nba", nbaQuery),
-    getCategoryArticles("lidom", homeNewsQuery),
-    getCategoryArticles("futbol-soccer", homeNewsQuery),
-    getCategoryArticles("nfl", homeNewsQuery),
-    getCategoryArticles("nhl", homeNewsQuery),
-    getCategoryArticles("tennis", homeNewsQuery),
-    getCategoryArticles("beisbol-latino", homeNewsQuery),
-    getCategoryArticles("otros-deportes", homeNewsQuery),
-    getLotteryFeed(),
-    getInstagramFeed(),
+    getCategoryArticles("futbol-soccer", homeSectionQuery),
+    getCategoryArticles("nfl", homeSectionQuery),
+    getCategoryArticles("nhl", homeSectionQuery),
+    getCategoryArticles("tennis", homeSectionQuery),
+    getCategoryArticles("beisbol-latino", homeSectionQuery),
+    getCategoryArticles("otros-deportes", homeSectionQuery),
   ]);
 
   const usedArticles = new Set<string>();

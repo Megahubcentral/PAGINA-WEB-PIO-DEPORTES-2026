@@ -2,7 +2,7 @@ import { canonicalUrl, toAbsoluteIsoDate } from "./seo";
 import type { SitemapEntry } from "./wordpress";
 
 export const SITEMAP_PAGE_PATHS = ["/", "/marcadores", "/loterias", "/videos"] as const;
-export const SITEMAP_REVALIDATE_SECONDS = 120;
+export const SITEMAP_REVALIDATE_SECONDS = 3600;
 
 export function xmlEscape(value: string) {
   return value

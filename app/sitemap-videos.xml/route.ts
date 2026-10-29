@@ -1,7 +1,7 @@
 import { newsEntriesToUrlset, xmlResponse } from "../../lib/sitemaps";
 import { getSitemapVideos } from "../../lib/wordpress";
 
-export const revalidate = 120;
+export const revalidate = 3600;
 
 export async function GET() {
   const videos = await getSitemapVideos();

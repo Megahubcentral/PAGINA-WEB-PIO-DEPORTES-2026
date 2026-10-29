@@ -3,7 +3,7 @@ import { xmlEscape, xmlResponse } from "../../lib/sitemaps";
 import { getNewsSitemapEntries } from "../../lib/wordpress";
 
 export const dynamic = "force-dynamic";
-export const revalidate = 120;
+export const revalidate = 3600;
 
 const NEWS_PUBLICATION = "Pío Deportes";
 

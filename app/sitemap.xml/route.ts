@@ -1,7 +1,7 @@
 import { sitemapIndexXml, xmlResponse } from "../../lib/sitemaps";
 import { getSitemapIndexMeta } from "../../lib/wordpress";
 
-export const revalidate = 120;
+export const revalidate = 3600;
 
 export async function GET() {
   const { newsChunks } = await getSitemapIndexMeta();
